@@ -1,0 +1,26 @@
+{
+	"$schema": "https://turbo.build/schema.json",
+	"extends": ["//"],
+	"tasks": {
+		"deploy:worker": {
+			"dependsOn": ["worker-app#check-wrangler-env", "web-app#build"],
+			"inputs": ["wrangler.json", "../../web-app/build/**/*"],
+			"outputLogs": "new-only",
+			"env": ["CLOUDFLARE_API_TOKEN", "CLOUDFLARE_ACCOUNT_ID"]
+		},
+		"check-wrangler-env": {
+			"inputs": ["../../.env"],
+			"outputLogs": "new-only"
+		},
+		"start": {
+			"dependsOn": ["web-app#build"]
+		},
+		"dev:check": {
+			"cache": false,
+			"dependsOn": ["dev:check-worker"]
+		},
+		"dev:check-worker": {
+			"cache": false
+		}
+	}
+}

@@ -1,0 +1,37 @@
+{
+	"name": "worker-app",
+	"private": true,
+	"version": "1.0.0",
+	"sideEffects": false,
+	"type": "module",
+	"scripts": {
+		"deploy:worker": "wrangler deploy",
+		"check-wrangler-env": "bun --env-file ../.env scripts/check-wrangler-env.ts",
+		"dev:check": "bun scripts/check-durable-objects.ts",
+		"dev:check-worker": "bun scripts/check-worker.ts",
+		"dev": "wrangler dev -e local --show-interactive-dev-session false --ip 0.0.0.0 --persist-to ../../.wrangler/state",
+		"start": "wrangler dev --persist-to ../../.wrangler/state",
+		"lint": "tsc --noEmit && tsc --noEmit --project ./scripts/tsconfig.json && biome check --write"
+	},
+	"dependencies": {
+		"@cloudflare/kv-asset-handler": "^0.4.0",
+		"example-do": "workspace:*",
+		"web-app": "workspace:*"
+	},
+	"devDependencies": {
+		"@biomejs/biome": "^1.9.4",
+		"@cloudflare/workers-types": "^4.20250313.0",
+		"@greybox/biome-config": "^1.4.0",
+		"@greybox/shared-tsconfig": "^1.4.0",
+		"@types/node": "^22.13.10",
+		"cloudflare-worker-config": "workspace:*",
+		"example-do": "workspace:*",
+		"tailwindcss": "^4.0.14",
+		"typescript": "^5.8.2",
+		"vite-node": "^3.0.8",
+		"wrangler": "4.0.0"
+	},
+	"engines": {
+		"node": ">=20.0.0"
+	}
+}

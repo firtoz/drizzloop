@@ -1,0 +1,31 @@
+{
+	"name": "example-do",
+	"version": "1.0.0",
+	"private": true,
+	"description": "Example Durable Object",
+	"main": "src/ExampleDO.ts",
+	"dependencies": {
+		"@greybox/durable-object-helpers": "^2.2.0",
+		"@hono/zod-validator": "^0.4.3",
+		"@types/color": "^4.2.0",
+		"hono": "^4.7.4",
+		"perfect-cursors": "^1.0.5",
+		"zod": "^3.24.2"
+	},
+	"devDependencies": {
+		"@cloudflare/workers-types": "^4.20250313.0",
+		"@greybox/biome-config": "^1.4.0",
+		"@greybox/shared-tsconfig": "^1.4.0",
+		"color": "^5.0.0"
+	},
+	"scripts": {
+		"deploy:durable-objects": "wrangler deploy",
+		"build": "wrangler deploy --dry-run --outdir=dist",
+		"dev": "wrangler dev -e local --show-interactive-dev-session false --ip 0.0.0.0 --persist-to ../../.wrangler/state",
+		"lint": "tsc --noEmit && biome check --write"
+	},
+	"exports": {
+		"./package.json": "./package.json",
+		"./*": "./src/*.ts"
+	}
+}

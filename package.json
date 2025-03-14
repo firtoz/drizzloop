@@ -1,0 +1,41 @@
+{
+	"name": "react-router-do-boilerplate",
+	"version": "1.0.0",
+	"private": true,
+	"description": "This project is a boilerplate for creating a React Router application with Cloudflare Durable Objects. It's set up as a monorepo using Bun and Turborepo for efficient management and building.",
+	"workspaces": [
+		"apps/*",
+		"packages/*",
+		"durable-objects/*"
+	],
+	"scripts": {
+		"build": "turbo build",
+		"dev": "turbo dev --ui tui",
+		"test": "turbo test",
+		"env:check-wrangler-env": "turbo run check-wrangler-env",
+		"env:deploy:worker": "turbo run deploy:worker",
+		"env:deploy:durable-objects": "turbo run deploy:durable-objects",
+		"test:watch": "turbo test:watch --ui tui",
+		"start": "turbo start --ui tui",
+		"lint": "turbo lint",
+		"check-wrangler-env": "bun --env-file .env env:check-wrangler-env",
+		"deploy": "bun deploy:durable-objects && bun deploy:worker",
+		"deploy:worker": "bun --env-file .env env:deploy:worker",
+		"deploy:durable-objects": "bun --env-file .env env:deploy:durable-objects"
+	},
+	"keywords": [],
+	"author": "",
+	"license": "MIT",
+	"devDependencies": {
+		"@types/bun": "^1.2.5",
+		"turbo": "^2.4.4",
+		"vitest": "3.0.8"
+	},
+	"packageManager": "bun@1.2.5",
+	"trustedDependencies": [
+		"@biomejs/biome"
+	],
+	"overrides": {
+		"vite": "^6.2.2"
+	}
+}

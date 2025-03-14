@@ -1,0 +1,46 @@
+{
+	"$schema": "../../node_modules/wrangler/config-schema.json",
+	"name": "example-do",
+	"main": "./src/ExampleDO.ts",
+	"workers_dev": false,
+	"compatibility_date": "2024-09-23",
+	"compatibility_flags": ["nodejs_compat"],
+	"dev": {
+		"port": 8788
+	},
+	"durable_objects": {
+		"bindings": [
+			{
+				"name": "EXAMPLE_DO",
+				"class_name": "ExampleDO",
+				"script_name": "example-do"
+			}
+		]
+	},
+	"migrations": [
+		{
+			"tag": "v1",
+			"new_classes": ["ExampleDO"]
+		}
+	],
+	"vars": {
+		"ENV": "production"
+	},
+	"env": {
+		"local": {
+			"vars": {
+				"ENV": "local"
+			},
+			"durable_objects": {
+				"bindings": [
+					{
+						"name": "EXAMPLE_DO",
+						"class_name": "ExampleDO",
+						"script_name": "example-do-local",
+						"environment": "local"
+					}
+				]
+			}
+		}
+	}
+}

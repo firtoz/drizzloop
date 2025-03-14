@@ -1,0 +1,24 @@
+{
+	"$schema": "https://turbo.build/schema.json",
+	"extends": ["//"],
+	"tasks": {
+		"build": {
+			"inputs": [
+				"app/**",
+				"public/**",
+				"tailwind.config.ts",
+				"react-router.config.ts",
+				"vite.config.ts",
+				"load-context.ts",
+				"../worker-app/wrangler.json",
+				"../worker-app/src/**/*.ts",
+				"package.json"
+			],
+			"outputs": ["build/**"],
+			"outputLogs": "new-only"
+		},
+		"dev": {
+			"dependsOn": ["worker-app#dev:check"]
+		}
+	}
+}

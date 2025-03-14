@@ -1,0 +1,7 @@
+{
+	"extends": "@greybox/shared-tsconfig/tsconfig.json",
+	"include": ["types.d.ts"],
+	"compilerOptions": {
+		"types": ["@cloudflare/workers-types"]
+	}
+}

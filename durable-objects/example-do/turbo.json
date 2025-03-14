@@ -1,0 +1,15 @@
+{
+	"$schema": "https://turbo.build/schema.json",
+	"extends": ["//"],
+	"tasks": {
+		"dev": {
+			"dependsOn": ["worker-app#dev:check-worker"]
+		},
+		"deploy:durable-objects": {
+			"dependsOn": ["worker-app#check-wrangler-env"],
+			"inputs": ["wrangler.json", "src/**/*"],
+			"outputLogs": "new-only",
+			"env": ["CLOUDFLARE_API_TOKEN", "CLOUDFLARE_ACCOUNT_ID"]
+		}
+	}
+}

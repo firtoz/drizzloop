@@ -1,0 +1,19 @@
+{
+	"compilerOptions": {
+		"target": "ESNext",
+		"module": "ESNext",
+		"moduleResolution": "Bundler",
+		"strict": true,
+		"types": [
+			"@cloudflare/workers-types",
+			"vitest/globals",
+			"@cloudflare/workers-types/experimental",
+			"@cloudflare/vitest-pool-workers"
+		],
+		"allowJs": true,
+		"esModuleInterop": true,
+		"skipLibCheck": true
+	},
+	"include": ["tests/**/*.ts", "tests/**/*.tsx"],
+	"exclude": ["node_modules"]
+}

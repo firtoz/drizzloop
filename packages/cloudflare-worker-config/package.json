@@ -1,0 +1,13 @@
+{
+	"name": "cloudflare-worker-config",
+	"private": true,
+	"version": "1.0.0",
+	"sideEffects": false,
+	"types": "types.d.ts",
+	"main": "types.d.ts",
+	"type": "module",
+	"devDependencies": {
+		"@cloudflare/workers-types": "^4.20250313.0",
+		"@greybox/shared-tsconfig": "^1.4.0"
+	}
+}

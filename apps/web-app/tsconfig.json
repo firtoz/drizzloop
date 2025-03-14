@@ -1,0 +1,20 @@
+{
+	"extends": "@greybox/shared-tsconfig/tsconfig.json",
+	"include": ["**/*.ts", "**/*.tsx"],
+	"compilerOptions": {
+		"lib": ["DOM", "DOM.Iterable", "ES2022"],
+		"types": [
+			"@react-router/cloudflare",
+			"@cloudflare/workers-types",
+			"vite/client"
+		],
+		"rootDirs": [".", "./.react-router/types"],
+		"jsx": "react-jsx",
+		"paths": {
+			"~/*": ["./app/*"]
+		},
+		"esModuleInterop": true,
+		"allowJs": false,
+		"module": "esnext"
+	}
+}

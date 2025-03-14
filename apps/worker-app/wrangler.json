@@ -1,0 +1,48 @@
+{
+	"$schema": "../../node_modules/wrangler/config-schema.json",
+	"name": "react-router-cloudflare-workers-template",
+	"main": "../web-app/build/server/index.js",
+	"workers_dev": true,
+	"compatibility_date": "2024-09-23",
+	"compatibility_flags": ["nodejs_compat"],
+	"assets": {
+		"directory": "../web-app/build/client",
+		"binding": "ASSETS",
+		"not_found_handling": "none"
+	},
+	"durable_objects": {
+		"bindings": [
+			{
+				"name": "EXAMPLE_DO",
+				"class_name": "ExampleDO",
+				"script_name": "example-do"
+			}
+		]
+	},
+	"vars": {
+		"ENV": "production"
+	},
+	"env": {
+		"local": {
+			"assets": {
+				"directory": "./dummy-assets",
+				"binding": "ASSETS",
+				"not_found_handling": "none"
+			},
+			"main": "./src/server.ts",
+			"vars": {
+				"ENV": "local"
+			},
+			"durable_objects": {
+				"bindings": [
+					{
+						"name": "EXAMPLE_DO",
+						"class_name": "ExampleDO",
+						"script_name": "example-do-local",
+						"environment": "local"
+					}
+				]
+			}
+		}
+	}
+}
