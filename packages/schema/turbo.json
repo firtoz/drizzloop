@@ -1,5 +1,10 @@
 {
 	"$schema": "https://turbo.build/schema.json",
 	"extends": ["//"],
-	"tasks": {}
+	"tasks": {
+		"db:generate": {
+			"inputs": ["src/schema.ts"],
+			"outputs": ["drizzle/**/*"]
+		}
+	}
 }

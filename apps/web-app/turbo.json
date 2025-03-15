@@ -18,7 +18,7 @@
 			"outputLogs": "new-only"
 		},
 		"dev": {
-			"dependsOn": ["worker-app#dev:check"]
+			"dependsOn": ["worker-app#dev:check", "schema#db:generate"]
 		}
 	}
 }
