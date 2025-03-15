@@ -49,28 +49,30 @@ export default defineConfig(({ isSsrBuild }): UserConfig => {
 					path: path.resolve(workerAppDir, ".wrangler/state/v3"),
 				},
 			}),
-			// vitePluginViteNodeMiniflare({
-			// 	entry: "../worker-app/src/server.ts",
-			// 	miniflareOptions: (options) => {
-			// 	  options.compatibilityDate = "2024-11-18";
-			// 		options.compatibilityFlags = ["nodejs_compat"];
-			// 		options.durableObjects = {
-			// 			EXAMPLE_DO: {
-			// 				className: "ExampleDO",
-			// 			},
-			// 		};
-			// 	},
-			// }),
 			reactRouter(),
 			tsconfigPaths(),
 		],
 		resolve: {
 			mainFields: ["browser", "module", "main"],
+			alias: [
+				{
+					// Alias all .sql imports to .sql?raw
+					find: /\.sql$/,
+					replacement: ".sql?raw",
+				},
+			],
 		},
 		esbuild: {
 			target: "es2022",
 		},
+		optimizeDeps: {
+			exclude: ["@sqlite.org/sqlite-wasm"],
+		},
 		server: {
+			headers: {
+				"Cross-Origin-Opener-Policy": "same-origin",
+				"Cross-Origin-Embedder-Policy": "require-corp",
+			},
 			host: "0.0.0.0",
 			hmr: {
 				clientPort: 5175,

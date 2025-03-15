@@ -1,6 +1,6 @@
 {
 	"$schema": "../../node_modules/wrangler/config-schema.json",
-	"name": "react-router-cloudflare-workers-template",
+	"name": "drizzloop",
 	"main": "../web-app/build/server/index.js",
 	"workers_dev": true,
 	"compatibility_date": "2024-09-23",
