@@ -10,6 +10,7 @@
 		"@types/color": "^4.2.0",
 		"hono": "^4.7.4",
 		"perfect-cursors": "^1.0.5",
+		"uuid": "^11.1.0",
 		"zod": "^3.24.2"
 	},
 	"devDependencies": {

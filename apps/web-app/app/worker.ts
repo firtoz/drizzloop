@@ -4,11 +4,25 @@ import sqlite3InitModule, {
 	type Sqlite3Static,
 	type Database,
 } from "@sqlite.org/sqlite-wasm";
-import * as schema from "schema/schema";
 // @ts-expect-error
 import migrations from "schema/migrations";
-import { migrate } from "./utils/sqlite-wasm-migrator";
+import * as schema from "schema/schema";
 import { drizzleSqliteWasm } from "./drizzleSqliteWasm";
+import { migrate } from "./utils/sqlite-wasm-migrator";
+
+// Define types for diagnostics information
+type Diagnostics = {
+	isSecureContext: boolean;
+	hasOPFS: boolean;
+	hasFileSystem: boolean;
+	hasStorage: boolean;
+	hasStoragePersist: boolean;
+	navigatorStorageEstimate: StorageEstimate | null;
+	headers: {
+		coep: string | null;
+		coop: string | null;
+	};
+};
 
 type WorkerMessage = {
 	id: string;
@@ -39,16 +53,98 @@ const error = (...args: unknown[]) => {
 let sqliteDb: Database | null = null;
 let db: ReturnType<typeof drizzleSqliteWasm> | null = null;
 
+const getDiagnostics = async (): Promise<Diagnostics> => {
+	const isSecureContext = self.isSecureContext;
+	const hasOPFS = "getDirectory" in (navigator?.storage?.getDirectory ?? {});
+	const hasFileSystem = "showOpenFilePicker" in self;
+	const hasStorage = "storage" in navigator;
+	const hasStoragePersist = "persist" in (navigator?.storage ?? {});
+
+	let navigatorStorageEstimate: StorageEstimate | null = null;
+	if (hasStorage) {
+		try {
+			navigatorStorageEstimate = await navigator.storage.estimate();
+		} catch (e) {
+			console.error("Failed to get storage estimate:", e);
+		}
+	}
+
+	const headers = {
+		coep: self.crossOriginIsolated ? "require-corp" : null,
+		coop: self.crossOriginIsolated ? "same-origin" : null,
+	};
+
+	return {
+		isSecureContext,
+		hasOPFS,
+		hasFileSystem,
+		hasStorage,
+		hasStoragePersist,
+		navigatorStorageEstimate,
+		headers,
+	};
+};
+
 const start = async (sqlite3: Sqlite3Static) => {
 	log("Running SQLite3 version", sqlite3.version.libVersion);
+
+	// Get diagnostics information
+	const diagnostics = await getDiagnostics();
+
+	// Log diagnostic results
+	log("Diagnostics results:");
+	log(
+		"Security Context:",
+		diagnostics.isSecureContext ? "Secure" : "Not Secure",
+	);
+	log(
+		"Storage APIs:",
+		[
+			diagnostics.hasOPFS ? "OPFS" : null,
+			diagnostics.hasFileSystem ? "File System" : null,
+			diagnostics.hasStorage ? "Storage" : null,
+			diagnostics.hasStoragePersist ? "Persistence" : null,
+		]
+			.filter(Boolean)
+			.join(", ") || "None available",
+	);
+
+	if (diagnostics.navigatorStorageEstimate) {
+		const { quota, usage } = diagnostics.navigatorStorageEstimate;
+		const usedMB = Math.round(usage ? usage / (1024 * 1024) : 0);
+		const quotaMB = Math.round(quota ? quota / (1024 * 1024) : 0);
+		log(
+			"Storage Usage:",
+			`${usedMB}MB of ${quotaMB}MB (${quota ? Math.round(((usage || 0) / quota) * 100) : 0}%)`,
+		);
+	}
+
+	log("Security Headers:");
+	log("- Cross-Origin-Embedder-Policy:", diagnostics.headers.coep || "not set");
+	log("- Cross-Origin-Opener-Policy:", diagnostics.headers.coop || "not set");
+
+	const storageStatus: {
+		status: "persistent" | "transient";
+		reason?: string;
+		diagnostics?: Diagnostics;
+	} = {
+		status: "transient",
+		diagnostics,
+	};
 
 	if ("opfs" in sqlite3) {
 		sqliteDb = new sqlite3.oo1.OpfsDb("/mydb.sqlite3");
 		log("OPFS is available, created persisted database at", sqliteDb.filename);
+		storageStatus.status = "persistent";
 	} else {
 		sqliteDb = new sqlite3.oo1.DB("/mydb.sqlite3", "c");
 		log("OPFS is not available, created transient database", sqliteDb.filename);
+		storageStatus.status = "transient";
+		storageStatus.reason = "indexeddb-error";
 	}
+
+	// Send storage status to main thread
+	self.postMessage(storageStatus);
 
 	try {
 		db = drizzleSqliteWasm(sqliteDb, {
@@ -174,6 +270,5 @@ sqlite3InitModule({
 		}
 	}
 });
-
 // Notify that the worker is loaded
 self.postMessage({ type: "ready" });

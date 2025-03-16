@@ -1,6 +1,7 @@
 import { BaseSession } from "@greybox/durable-object-helpers/BaseSession";
 import type { Env } from "cloudflare-worker-config";
 import ColorJS from "color";
+import { v7 } from "uuid";
 import type { ClientMessage, LiveParticipant, ServerMessage } from "./types";
 
 type Super = BaseSession<Env, LiveParticipant, ServerMessage, ClientMessage>;
@@ -13,7 +14,7 @@ export class ExampleSession extends BaseSession<
 > {
 	protected createData: Super["createData"] = (_ctx): LiveParticipant => {
 		return {
-			id: crypto.randomUUID(),
+			id: v7(),
 			color: ColorJS.hsl(Math.random() * 360, 50, 50)
 				.rgb()
 				.string(),

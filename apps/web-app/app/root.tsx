@@ -9,19 +9,15 @@ import {
 
 import type { Route } from "./+types/root";
 import stylesheet from "./app.css?url";
+import { OfflineIndicator } from "./components/OfflineIndicator";
+import { ReloadPrompt } from "./components/ReloadPrompt";
 
 export const links: Route.LinksFunction = () => [
-	{ rel: "preconnect", href: "https://fonts.googleapis.com" },
-	{
-		rel: "preconnect",
-		href: "https://fonts.gstatic.com",
-		crossOrigin: "anonymous",
-	},
-	{
-		rel: "stylesheet",
-		href: "https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap",
-	},
 	{ rel: "stylesheet", href: stylesheet },
+	{ rel: "manifest", href: "/site.webmanifest" },
+	{ rel: "icon", href: "/favicon.ico" },
+	{ rel: "apple-touch-icon", href: "/logo-light.png", sizes: "180x180" },
+	{ rel: "mask-icon", href: "/logo-light.png", color: "#000000" },
 ];
 
 export function Layout({ children }: { children: React.ReactNode }) {
@@ -30,11 +26,22 @@ export function Layout({ children }: { children: React.ReactNode }) {
 			<head>
 				<meta charSet="utf-8" />
 				<meta name="viewport" content="width=device-width, initial-scale=1" />
+				<meta name="theme-color" content="#000000" />
+				<meta
+					name="description"
+					content="DrizzLoop Web App - A progressive web app built with Drizzle"
+				/>
+				<meta name="mobile-web-app-capable" content="yes" />
+				<meta name="apple-mobile-web-app-capable" content="yes" />
+				<meta name="apple-mobile-web-app-status-bar-style" content="black" />
+				<title>DrizzLoop Web App</title>
 				<Meta />
 				<Links />
 			</head>
 			<body>
 				{children}
+				<OfflineIndicator />
+				<ReloadPrompt />
 				<ScrollRestoration />
 				<Scripts />
 			</body>

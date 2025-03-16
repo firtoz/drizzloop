@@ -4,10 +4,10 @@ import sqlite3InitModule, {
 } from "@sqlite.org/sqlite-wasm";
 import { sql } from "drizzle-orm";
 
-import { usersTable, type UserId } from "./schema";
 import { drizzleSqliteWasm } from "web-app/app/drizzleSqliteWasm";
 import { migrate } from "web-app/app/utils/sqlite-wasm-migrator";
 import migrations from "../drizzle/migrations";
+import { type UserId, usersTable } from "./schema";
 
 describe("SQLite WASM Migrations", () => {
 	let sqlite3: Sqlite3Static;

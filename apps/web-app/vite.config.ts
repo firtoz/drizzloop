@@ -4,6 +4,7 @@ import { reactRouter } from "@react-router/dev/vite";
 import { cloudflareDevProxy } from "@react-router/dev/vite/cloudflare";
 import tailwindcss from "@tailwindcss/vite";
 import { type UserConfig, defineConfig } from "vite";
+// import { VitePWA } from "vite-plugin-pwa";
 import tsconfigPaths from "vite-tsconfig-paths";
 
 export default defineConfig(({ isSsrBuild }): UserConfig => {
@@ -41,6 +42,47 @@ export default defineConfig(({ isSsrBuild }): UserConfig => {
 			},
 		},
 		plugins: [
+			// VitePWA({
+			// 	registerType: "prompt",
+			// 	injectRegister: "auto",
+			// 	strategies: "injectManifest",
+			// 	srcDir: "app",
+			// 	filename: "sw.ts",
+			// 	manifest: {
+			// 		name: "DrizzLoop Web App",
+			// 		short_name: "DrizzLoop",
+			// 		description: "A progressive web app built with Drizzle",
+			// 		theme_color: "#000000",
+			// 		icons: [
+			// 			{
+			// 				src: "/logo-light.png",
+			// 				sizes: "192x192",
+			// 				type: "image/png",
+			// 			},
+			// 			{
+			// 				src: "/logo-dark.png",
+			// 				sizes: "512x512",
+			// 				type: "image/png",
+			// 			},
+			// 		],
+			// 	},
+			// 	devOptions: {
+			// 		enabled: true,
+			// 		type: "module",
+			// 	},
+			// 	workbox: {
+			// 		globPatterns: [
+			// 			"**/*.{js,css,html,ico,png,svg,woff,woff2,ttf,eot,wasm,mjs}",
+			// 		],
+			// 		navigateFallbackDenylist: [/^index.html$/],
+			// 		additionalManifestEntries: [
+			// 			{
+			// 				url: "/worker.js",
+			// 				revision: `${Date.now()}`,
+			// 			},
+			// 		],
+			// 	},
+			// }),
 			tailwindcss(),
 			cloudflareDevProxy({
 				configPath: patchedWranglerConfigPath,
@@ -72,6 +114,7 @@ export default defineConfig(({ isSsrBuild }): UserConfig => {
 			headers: {
 				"Cross-Origin-Opener-Policy": "same-origin",
 				"Cross-Origin-Embedder-Policy": "require-corp",
+				"Cross-Origin-Resource-Policy": "cross-origin",
 			},
 			host: "0.0.0.0",
 			hmr: {
@@ -86,5 +129,6 @@ export default defineConfig(({ isSsrBuild }): UserConfig => {
 				},
 			},
 		},
+		assetsInclude: ["**/*.wasm"],
 	} satisfies UserConfig;
 });

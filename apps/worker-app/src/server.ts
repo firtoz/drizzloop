@@ -3,6 +3,7 @@ import { honoDoFetcherWithName } from "@greybox/hono-typed-fetcher/honoDoFetcher
 import type { Env } from "cloudflare-worker-config";
 import { Hono } from "hono";
 import { createRequestHandler } from "react-router";
+import { secureHeaders } from "hono/secure-headers";
 
 const requestHandler = createRequestHandler(
 	async () => {
@@ -18,7 +19,15 @@ const app = new Hono<{
 	Bindings: Env & {
 		ASSETS: Fetcher;
 	};
-}>()
+}>();
+app
+	.use(
+		"*",
+		secureHeaders({
+			crossOriginEmbedderPolicy: "require-corp",
+			crossOriginOpenerPolicy: "same-origin",
+		}),
+	)
 	.get("/websocket", async (c): Promise<Response> => {
 		const fetcher = honoDoFetcherWithName(c.env.EXAMPLE_DO, "default");
 		return fetcher.get({
@@ -39,7 +48,14 @@ const app = new Hono<{
 				response = await env.ASSETS.fetch(req.url, req.raw.clone());
 				response =
 					response && response.status >= 200 && response.status < 400
-						? new Response(response.body, response)
+						? new Response(response.body, {
+								...response,
+								headers: {
+									...Object.fromEntries(response.headers.entries()),
+									"Cross-Origin-Embedder-Policy": "require-corp",
+									"Cross-Origin-Opener-Policy": "same-origin",
+								},
+							})
 						: undefined;
 			} catch {}
 

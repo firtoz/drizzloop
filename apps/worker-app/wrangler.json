@@ -10,6 +10,12 @@
 		"binding": "ASSETS",
 		"not_found_handling": "none"
 	},
+	"routes": [
+		{
+			"pattern": "drizzloop.lunix.ai",
+			"custom_domain": true
+		}
+	],
 	"durable_objects": {
 		"bindings": [
 			{

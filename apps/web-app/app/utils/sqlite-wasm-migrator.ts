@@ -1,6 +1,6 @@
 import { sql } from "drizzle-orm";
-import type { SqliteRemoteDatabase } from "drizzle-orm/sqlite-proxy";
 import type { MigrationMeta } from "drizzle-orm/migrator";
+import type { SqliteRemoteDatabase } from "drizzle-orm/sqlite-proxy";
 
 interface MigrationConfig {
 	journal: {

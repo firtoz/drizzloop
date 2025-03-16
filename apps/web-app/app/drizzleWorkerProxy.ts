@@ -1,5 +1,6 @@
 import type { DrizzleConfig } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/sqlite-proxy";
+import { v7 } from "uuid";
 
 type WorkerMessage = {
 	id: string;
@@ -56,7 +57,7 @@ export const drizzleWorkerProxy = <
 		method: "run" | "all" | "values" | "get",
 	) => {
 		return new Promise<{ rows: unknown[] | unknown[][] }>((resolve, reject) => {
-			const id = crypto.randomUUID();
+			const id = v7();
 
 			// Store the promise callbacks in the map
 			pendingRequests.set(id, { resolve, reject });

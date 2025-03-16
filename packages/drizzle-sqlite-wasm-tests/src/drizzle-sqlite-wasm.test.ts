@@ -4,8 +4,8 @@ import sqlite3InitModule, {
 } from "@sqlite.org/sqlite-wasm";
 import { eq } from "drizzle-orm";
 
-import { usersTable, type UserId } from "./schema";
 import { drizzleSqliteWasm } from "web-app/app/drizzleSqliteWasm";
+import { type UserId, usersTable } from "./schema";
 
 describe("drizzle-sqlite-wasm", () => {
 	let sqlite3: Sqlite3Static;
