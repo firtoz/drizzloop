@@ -88,6 +88,9 @@ export function WorkerProvider({ children }: { children: ReactNode }) {
 			} else if (data.type === "storage-status") {
 				setStorageStatus(data);
 				console.log("Storage status:", data);
+			} else if (data.type === "check-cross-origin-resources") {
+				// Handle request to check cross-origin resources
+				checkCrossOriginResources();
 			}
 		};
 
@@ -99,6 +102,83 @@ export function WorkerProvider({ children }: { children: ReactNode }) {
 			abortController.abort();
 		};
 	}, [worker]);
+
+	// Function to check for cross-origin resources that might affect isolation
+	const checkCrossOriginResources = () => {
+		if (typeof document === "undefined") return;
+
+		try {
+			// Get all scripts, images, iframes, etc.
+			const scripts = Array.from(document.getElementsByTagName("script"));
+			const images = Array.from(document.getElementsByTagName("img"));
+			const iframes = Array.from(document.getElementsByTagName("iframe"));
+			const links = Array.from(document.getElementsByTagName("link"));
+
+			const allResources = [...scripts, ...images, ...iframes, ...links];
+
+			// Check for cross-origin resources
+			const crossOriginResources = allResources.filter((el) => {
+				let src: string | null = null;
+				if ("src" in el && typeof el.src === "string") {
+					src = el.src;
+				} else if ("href" in el && typeof el.href === "string") {
+					src = el.href;
+				}
+
+				if (!src) return false;
+
+				try {
+					const resourceUrl = new URL(src, window.location.href);
+					return resourceUrl.origin !== window.location.origin;
+				} catch (e) {
+					return false;
+				}
+			});
+
+			if (crossOriginResources.length > 0) {
+				const message = `Found ${crossOriginResources.length} cross-origin resources that might affect isolation`;
+				console.warn(message);
+
+				// Send the results back to the worker
+				if (worker) {
+					worker.postMessage({
+						type: "log",
+						payload: message,
+					});
+
+					// Log a few examples
+					const samplesToLog = crossOriginResources.slice(0, 3);
+					samplesToLog.forEach((resource, i) => {
+						let src = "";
+						if ("src" in resource && typeof resource.src === "string") {
+							src = resource.src;
+						} else if (
+							"href" in resource &&
+							typeof resource.href === "string"
+						) {
+							src = resource.href;
+						}
+
+						worker.postMessage({
+							type: "log",
+							payload: `Cross-origin resource ${i + 1}: ${resource.tagName.toLowerCase()} - ${src}`,
+						});
+					});
+				}
+			} else {
+				console.log("No cross-origin resources detected");
+				if (worker) {
+					worker.postMessage({
+						type: "log",
+						payload:
+							"No cross-origin resources detected that could affect isolation",
+					});
+				}
+			}
+		} catch (e) {
+			console.error("Error checking cross-origin resources:", e);
+		}
+	};
 
 	const value = {
 		worker,

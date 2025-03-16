@@ -22,6 +22,7 @@ type Diagnostics = {
 		coep: string | null;
 		coop: string | null;
 	};
+	opfsAccessible: boolean;
 };
 
 type WorkerMessage = {
@@ -55,10 +56,29 @@ let db: ReturnType<typeof drizzleSqliteWasm> | null = null;
 
 const getDiagnostics = async (): Promise<Diagnostics> => {
 	const isSecureContext = self.isSecureContext;
-	const hasOPFS = "getDirectory" in (navigator?.storage?.getDirectory ?? {});
+	const hasOPFS = "storage" in navigator && "getDirectory" in navigator.storage;
 	const hasFileSystem = "showOpenFilePicker" in self;
 	const hasStorage = "storage" in navigator;
 	const hasStoragePersist = "persist" in (navigator?.storage ?? {});
+
+	// Test OPFS access directly
+	let opfsAccessible = false;
+	if (hasOPFS) {
+		try {
+			const root = await navigator.storage.getDirectory();
+			// Try to create a test file
+			const testFile = await root.getFileHandle("opfs-test.txt", {
+				create: true,
+			});
+			opfsAccessible = true;
+			log("OPFS direct test: Successfully created test file");
+		} catch (e) {
+			log(
+				"OPFS direct test failed:",
+				e instanceof Error ? e.message : String(e),
+			);
+		}
+	}
 
 	let navigatorStorageEstimate: StorageEstimate | null = null;
 	if (hasStorage) {
@@ -67,6 +87,38 @@ const getDiagnostics = async (): Promise<Diagnostics> => {
 		} catch (e) {
 			console.error("Failed to get storage estimate:", e);
 		}
+	}
+
+	// Check if cross-origin isolation is enabled
+	const isCrossOriginIsolated = self.crossOriginIsolated;
+
+	// Log detailed cross-origin isolation info
+	log("Cross-Origin Isolation Status:");
+	log("- self.crossOriginIsolated:", isCrossOriginIsolated);
+
+	// Try to fetch the current page to check headers directly
+	try {
+		const response = await fetch(self.location.href);
+		const coepHeader = response.headers.get("cross-origin-embedder-policy");
+		const coopHeader = response.headers.get("cross-origin-opener-policy");
+		const permissionsPolicyHeader = response.headers.get("permissions-policy");
+		const corpHeader = response.headers.get("cross-origin-resource-policy");
+
+		log("- Actual HTTP Headers (from fetch):");
+		log("  - Cross-Origin-Embedder-Policy:", coepHeader || "not set");
+		log("  - Cross-Origin-Opener-Policy:", coopHeader || "not set");
+		log("  - Cross-Origin-Resource-Policy:", corpHeader || "not set");
+		log("  - Permissions-Policy:", permissionsPolicyHeader || "not set");
+
+		// Check if permissions policy might be blocking cross-origin-isolation
+		if (permissionsPolicyHeader?.includes("cross-origin-isolated=()")) {
+			log("  - WARNING: Permissions-Policy is blocking cross-origin-isolation");
+		}
+	} catch (e) {
+		log(
+			"- Failed to fetch headers:",
+			e instanceof Error ? e.message : String(e),
+		);
 	}
 
 	const headers = {
@@ -82,8 +134,121 @@ const getDiagnostics = async (): Promise<Diagnostics> => {
 		hasStoragePersist,
 		navigatorStorageEstimate,
 		headers,
+		opfsAccessible,
 	};
 };
+
+// Try to request storage persistence
+const requestStoragePersistence = async (): Promise<boolean> => {
+	if (!("storage" in navigator && "persist" in navigator.storage)) {
+		log("Storage persistence API is not available");
+		return false;
+	}
+
+	try {
+		// Check if already persistent
+		const isPersisted = await navigator.storage.persisted();
+		if (isPersisted) {
+			log("Storage is already persistent");
+			return true;
+		}
+
+		// Request persistence
+		const persisted = await navigator.storage.persist();
+		if (persisted) {
+			log("Successfully requested storage persistence");
+			return true;
+		}
+
+		log("Storage persistence request was denied");
+		return false;
+	} catch (e) {
+		error("Error requesting storage persistence:", e);
+		return false;
+	}
+};
+
+// Function to check for potential cross-origin isolation issues
+const checkCrossOriginIsolationIssues = () => {
+	try {
+		// Check if we're in a browser environment
+		if (typeof document === "undefined") {
+			log(
+				"Not in a browser environment, skipping cross-origin isolation check",
+			);
+			return;
+		}
+
+		// Get all scripts, images, iframes, etc.
+		const scripts = Array.from(document.getElementsByTagName("script"));
+		const images = Array.from(document.getElementsByTagName("img"));
+		const iframes = Array.from(document.getElementsByTagName("iframe"));
+		const links = Array.from(document.getElementsByTagName("link"));
+
+		const allResources = [...scripts, ...images, ...iframes, ...links];
+
+		// Check for cross-origin resources
+		const crossOriginResources = allResources.filter((el) => {
+			// Handle different element types
+			let src: string | null = null;
+			if ("src" in el && typeof el.src === "string") {
+				src = el.src;
+			} else if ("href" in el && typeof el.href === "string") {
+				src = el.href;
+			}
+
+			if (!src) return false;
+
+			try {
+				const resourceUrl = new URL(src, window.location.href);
+				return resourceUrl.origin !== window.location.origin;
+			} catch (e) {
+				return false;
+			}
+		});
+
+		if (crossOriginResources.length > 0) {
+			log("Potential cross-origin isolation issues found:");
+			log(`- ${crossOriginResources.length} cross-origin resources detected`);
+			log(
+				"- These resources need CORS headers and Cross-Origin-Resource-Policy headers",
+			);
+
+			// Log the first few resources
+			const samplesToLog = crossOriginResources.slice(0, 3);
+			samplesToLog.forEach((resource, i) => {
+				let src = "";
+				if ("src" in resource && typeof resource.src === "string") {
+					src = resource.src;
+				} else if ("href" in resource && typeof resource.href === "string") {
+					src = resource.href;
+				}
+				log(`  ${i + 1}. ${resource.tagName.toLowerCase()}: ${src}`);
+			});
+
+			if (crossOriginResources.length > 3) {
+				log(`  ... and ${crossOriginResources.length - 3} more`);
+			}
+		} else {
+			log("No cross-origin resources detected that could affect isolation");
+		}
+	} catch (e) {
+		log(
+			"Error checking for cross-origin resources:",
+			e instanceof Error ? e.message : String(e),
+		);
+	}
+};
+
+// Try to run the check if we're in a browser context
+try {
+	if (typeof document !== "undefined") {
+		// We can't access the document directly from a worker, so we need to send a message to the main thread
+		self.postMessage({ type: "check-cross-origin-resources" });
+	}
+} catch (e) {
+	// Ignore errors, this is just a diagnostic
+}
 
 const start = async (sqlite3: Sqlite3Static) => {
 	log("Running SQLite3 version", sqlite3.version.libVersion);
@@ -109,6 +274,11 @@ const start = async (sqlite3: Sqlite3Static) => {
 			.join(", ") || "None available",
 	);
 
+	// Log OPFS status
+	log("OPFS API available:", diagnostics.hasOPFS ? "Yes" : "No");
+	log("OPFS directly accessible:", diagnostics.opfsAccessible ? "Yes" : "No");
+	log("SQLite OPFS support:", "opfs" in sqlite3 ? "Yes" : "No");
+
 	if (diagnostics.navigatorStorageEstimate) {
 		const { quota, usage } = diagnostics.navigatorStorageEstimate;
 		const usedMB = Math.round(usage ? usage / (1024 * 1024) : 0);
@@ -122,6 +292,14 @@ const start = async (sqlite3: Sqlite3Static) => {
 	log("Security Headers:");
 	log("- Cross-Origin-Embedder-Policy:", diagnostics.headers.coep || "not set");
 	log("- Cross-Origin-Opener-Policy:", diagnostics.headers.coop || "not set");
+	log("Cross-Origin Isolated:", self.crossOriginIsolated ? "Yes" : "No");
+
+	// Try to request persistence
+	const persistenceRequested = await requestStoragePersistence();
+	log(
+		"Storage persistence requested:",
+		persistenceRequested ? "Successful" : "Failed",
+	);
 
 	const storageStatus: {
 		status: "persistent" | "transient";
@@ -140,11 +318,28 @@ const start = async (sqlite3: Sqlite3Static) => {
 		sqliteDb = new sqlite3.oo1.DB("/mydb.sqlite3", "c");
 		log("OPFS is not available, created transient database", sqliteDb.filename);
 		storageStatus.status = "transient";
-		storageStatus.reason = "indexeddb-error";
+
+		// Provide more detailed reason
+		storageStatus.reason = "indexeddb-error"; // Default reason
+
+		if (!diagnostics.isSecureContext) {
+			storageStatus.reason = "not-secure-context";
+			log("OPFS unavailable reason: Not in a secure context (HTTPS required)");
+		} else if (!self.crossOriginIsolated) {
+			storageStatus.reason = "not-cross-origin-isolated";
+			log("OPFS unavailable reason: Site is not cross-origin isolated");
+			log(
+				"Required headers: Cross-Origin-Embedder-Policy: require-corp and Cross-Origin-Opener-Policy: same-origin",
+			);
+		} else {
+			log(
+				"OPFS unavailable reason: Unknown (possibly browser support or permissions)",
+			);
+		}
 	}
 
 	// Send storage status to main thread
-	self.postMessage(storageStatus);
+	self.postMessage({ type: "storage-status", ...storageStatus });
 
 	try {
 		db = drizzleSqliteWasm(sqliteDb, {

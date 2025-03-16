@@ -26,6 +26,7 @@ app
 		secureHeaders({
 			crossOriginEmbedderPolicy: "require-corp",
 			crossOriginOpenerPolicy: "same-origin",
+			crossOriginResourcePolicy: "same-origin",
 		}),
 	)
 	.get("/websocket", async (c): Promise<Response> => {
@@ -54,6 +55,7 @@ app
 									...Object.fromEntries(response.headers.entries()),
 									"Cross-Origin-Embedder-Policy": "require-corp",
 									"Cross-Origin-Opener-Policy": "same-origin",
+									"Cross-Origin-Resource-Policy": "same-origin",
 								},
 							})
 						: undefined;
