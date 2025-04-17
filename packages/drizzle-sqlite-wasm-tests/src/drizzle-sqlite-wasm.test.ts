@@ -4,7 +4,10 @@ import sqlite3InitModule, {
 } from "@sqlite.org/sqlite-wasm";
 import { eq } from "drizzle-orm";
 
-import { drizzleSqliteWasm, DrizzleSqliteWasmConfig } from "web-app/app/drizzleSqliteWasm";
+import {
+	type DrizzleSqliteWasmConfig,
+	drizzleSqliteWasm,
+} from "web-app/app/drizzleSqliteWasm";
 import { type UserId, usersTable } from "./schema";
 
 describe("drizzle-sqlite-wasm", () => {
@@ -87,7 +90,7 @@ describe("drizzle-sqlite-wasm", () => {
 
 	test("should handle all CRUD operations", async () => {
 		const config: DrizzleSqliteWasmConfig<{
-			usersTable: typeof usersTable,
+			usersTable: typeof usersTable;
 		}> = {
 			schema: {
 				usersTable,

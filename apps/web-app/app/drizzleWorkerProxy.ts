@@ -1,8 +1,8 @@
+import type { BindingSpec } from "@sqlite.org/sqlite-wasm";
 import type { DrizzleConfig } from "drizzle-orm";
-import { drizzle, type SqliteRemoteDatabase } from "drizzle-orm/sqlite-proxy";
+import { type SqliteRemoteDatabase, drizzle } from "drizzle-orm/sqlite-proxy";
 import { v7 } from "uuid";
 import type { WorkerMessage, WorkerResponse } from "./worker";
-import type { BindingSpec } from "@sqlite.org/sqlite-wasm";
 
 type PendingRequest = {
 	resolve: (value: {

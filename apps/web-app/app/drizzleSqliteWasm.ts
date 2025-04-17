@@ -2,9 +2,10 @@ import type { Database } from "@sqlite.org/sqlite-wasm";
 import type { DrizzleConfig } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/sqlite-proxy";
 
-export type DrizzleSqliteWasmConfig<TSchema extends Record<string, unknown>> = DrizzleConfig<TSchema> & {
-	debug?: boolean;
-};
+export type DrizzleSqliteWasmConfig<TSchema extends Record<string, unknown>> =
+	DrizzleConfig<TSchema> & {
+		debug?: boolean;
+	};
 
 export const drizzleSqliteWasm = <
 	TSchema extends Record<string, unknown> = Record<string, never>,
@@ -12,10 +13,7 @@ export const drizzleSqliteWasm = <
 	sqliteDb: Database,
 	config?: DrizzleSqliteWasmConfig<TSchema>,
 ) => {
-	const {
-		debug,
-		...rest
-	} = config ?? {};
+	const { debug, ...rest } = config ?? {};
 
 	return drizzle(async (sql, params, method) => {
 		if (config?.debug) {
@@ -66,7 +64,7 @@ export const drizzleSqliteWasm = <
 					console.error("Error getting row data:", e);
 				}
 
-				if(!callbackReceived) {
+				if (!callbackReceived) {
 					return { rows: undefined as unknown as unknown[] };
 				}
 

@@ -8,9 +8,9 @@ import {
 	useState,
 } from "react";
 import * as schema from "schema/schema";
+import type { WorkerResponse, WorkerStorageStatus } from "~/worker";
 import { drizzleWorkerProxy } from "../drizzleWorkerProxy";
 import MyWorker from "../worker?worker";
-import type { WorkerResponse, WorkerStorageStatus } from "~/worker";
 
 type WorkerContextType = {
 	worker: Worker | null;

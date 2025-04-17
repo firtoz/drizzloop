@@ -110,7 +110,7 @@ const TestInner = () => {
 										{storageStatus.status === "persistent"
 											? "Persistent (data will be saved)"
 											: "Temporary (data will be lost when you close the browser)"}
-										{storageStatus.reason && (
+										{storageStatus.status === "transient" && (
 											<div>
 												<strong>Reason:</strong> {storageStatus.reason}
 											</div>
