@@ -23,7 +23,7 @@ export default defineConfig(({ isSsrBuild }): UserConfig => {
 						input: path.resolve(workerAppDir, "src/server.ts"),
 						external: ["cloudflare:workers"],
 					}
-				: undefined,
+				: {},
 		},
 		ssr: {
 			target: "webworker",

@@ -27,15 +27,15 @@
 	"author": "",
 	"license": "MIT",
 	"devDependencies": {
-		"@types/bun": "^1.2.5",
-		"turbo": "^2.4.4",
-		"vitest": "3.0.8"
+		"@types/bun": "^1.2.10",
+		"turbo": "^2.5.0",
+		"vitest": "3.1.1"
 	},
-	"packageManager": "bun@1.2.5",
+	"packageManager": "bun@1.2.10",
 	"trustedDependencies": [
 		"@biomejs/biome"
 	],
 	"overrides": {
-		"vite": "^6.2.2"
+		"vite": "^6.3.1"
 	}
 }

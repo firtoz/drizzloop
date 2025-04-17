@@ -138,7 +138,7 @@ export const useLiveParticipants = () => {
 			const existingIndex = activePointers.current.findIndex(
 				(p) => p.pointerId === event.pointerId,
 			);
-			if (existingIndex >= 0) {
+			if (existingIndex >= 0 && activePointers.current[existingIndex]) {
 				activePointers.current[existingIndex] = {
 					...activePointers.current[existingIndex],
 					x,
@@ -160,7 +160,10 @@ export const useLiveParticipants = () => {
 				(p) => p.pointerId === event.pointerId,
 			);
 			if (existingIndex >= 0) {
-				if (event.pointerType === "mouse") {
+				if (
+					event.pointerType === "mouse" &&
+					activePointers.current[existingIndex]
+				) {
 					activePointers.current[existingIndex].isActive = false;
 				} else {
 					activePointers.current = activePointers.current.filter(

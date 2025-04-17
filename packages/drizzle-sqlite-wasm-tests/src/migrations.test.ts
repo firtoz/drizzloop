@@ -40,7 +40,7 @@ describe("SQLite WASM Migrations", () => {
 		expect(migrations.journal.entries.length).toBeGreaterThan(0);
 
 		// Check that the first migration exists
-		const firstMigrationKey = `m${migrations.journal.entries[0].idx.toString().padStart(4, "0")}`;
+		const firstMigrationKey = `m${migrations.journal.entries[0]?.idx.toString().padStart(4, "0")}`;
 		expect(migrations.migrations).toHaveProperty(firstMigrationKey);
 
 		// Check that the migration SQL contains expected table creation
@@ -156,7 +156,7 @@ describe("SQLite WASM Migrations", () => {
 			returnValue: "resultRows",
 		});
 
-		expect(migrationsCount[0][0]).toBe(2);
+		expect(migrationsCount[0]?.[0]).toBe(2);
 
 		// Insert a user to verify the table structure including the new role column
 		await db.insert(usersTable).values({
@@ -183,9 +183,9 @@ describe("SQLite WASM Migrations", () => {
 		});
 
 		expect(userWithRole.length).toBe(1);
-		expect(userWithRole[0][0]).toBe("1");
-		expect(userWithRole[0][1]).toBe("Test User");
-		expect(userWithRole[0][2]).toBe("user"); // Default role value
+		expect(userWithRole[0]?.[0]).toBe("1");
+		expect(userWithRole[0]?.[1]).toBe("Test User");
+		expect(userWithRole[0]?.[2]).toBe("user"); // Default role value
 	});
 
 	test("should not reapply existing migrations", async () => {
@@ -205,7 +205,7 @@ describe("SQLite WASM Migrations", () => {
 			returnValue: "resultRows",
 		});
 
-		expect(initialMigrationsCount[0][0]).toBe(1);
+		expect(initialMigrationsCount[0]?.[0]).toBe(1);
 
 		// Apply the same migrations again
 		await migrate(db, migrations);
@@ -216,6 +216,6 @@ describe("SQLite WASM Migrations", () => {
 			returnValue: "resultRows",
 		});
 
-		expect(finalMigrationsCount[0][0]).toBe(1);
+		expect(finalMigrationsCount[0]?.[0]).toBe(1);
 	});
 });

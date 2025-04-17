@@ -2,8 +2,8 @@ import { WorkerEntrypoint } from "cloudflare:workers";
 import { honoDoFetcherWithName } from "@greybox/hono-typed-fetcher/honoDoFetcher";
 import type { Env } from "cloudflare-worker-config";
 import { Hono } from "hono";
-import { createRequestHandler } from "react-router";
 import { secureHeaders } from "hono/secure-headers";
+import { createRequestHandler } from "react-router";
 
 const requestHandler = createRequestHandler(
 	async () => {

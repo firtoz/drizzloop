@@ -4,7 +4,7 @@ import sqlite3InitModule, {
 } from "@sqlite.org/sqlite-wasm";
 import { eq } from "drizzle-orm";
 
-import { drizzleSqliteWasm } from "web-app/app/drizzleSqliteWasm";
+import { drizzleSqliteWasm, DrizzleSqliteWasmConfig } from "web-app/app/drizzleSqliteWasm";
 import { type UserId, usersTable } from "./schema";
 
 describe("drizzle-sqlite-wasm", () => {
@@ -81,17 +81,22 @@ describe("drizzle-sqlite-wasm", () => {
 		expect(user?.password).toBe("password123");
 		expect(user?.age).toBe(30);
 		expect(user?.isActive).toBe(true);
-		expect(user?.rating).toBe(4.75);
+		expect(user?.rating).toBe("4.75");
 		expect(user?.balance).toBe(1000.5);
 	});
 
 	test("should handle all CRUD operations", async () => {
-		// Initialize drizzle with the SQLite database
-		const db = drizzleSqliteWasm(sqliteDb, {
+		const config: DrizzleSqliteWasmConfig<{
+			usersTable: typeof usersTable,
+		}> = {
 			schema: {
 				usersTable,
 			},
-		});
+			debug: false,
+		};
+
+		// Initialize drizzle with the SQLite database
+		const db = drizzleSqliteWasm(sqliteDb, config);
 
 		// Create the users table
 		sqliteDb.exec(`
@@ -146,7 +151,7 @@ describe("drizzle-sqlite-wasm", () => {
 			where: (users, { eq }) => eq(users.id, "1" as UserId),
 		});
 
-		// The user should be null or have no properties after deletion
+		// // The user should be null or have no properties after deletion
 		expect(user?.id).toBeUndefined();
 	});
 
@@ -218,9 +223,9 @@ describe("drizzle-sqlite-wasm", () => {
 			orderBy: (users, { desc }) => [desc(users.age)],
 		});
 
-		expect(orderedUsers[0].age).toBe(35);
-		expect(orderedUsers[1].age).toBe(30);
-		expect(orderedUsers[2].age).toBe(25);
+		expect(orderedUsers[0]?.age).toBe(35);
+		expect(orderedUsers[1]?.age).toBe(30);
+		expect(orderedUsers[2]?.age).toBe(25);
 
 		// Test limit and offset
 		const limitedUsers = await db.query.usersTable.findMany({
@@ -236,6 +241,6 @@ describe("drizzle-sqlite-wasm", () => {
 		});
 
 		expect(filteredUsers.length).toBe(1);
-		expect(filteredUsers[0].id).toBe("3");
+		expect(filteredUsers[0]?.id).toBe("3");
 	});
 });

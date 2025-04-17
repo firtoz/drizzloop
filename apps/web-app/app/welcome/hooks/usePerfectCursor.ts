@@ -2,19 +2,25 @@ import { PerfectCursor } from "perfect-cursors";
 import React, { useState, useLayoutEffect } from "react";
 
 export function usePerfectCursor(
-	cb: (point: number[]) => void,
-	point?: number[],
+	cb: (point: [number, number]) => void,
+	point?: [number, number],
 ) {
-	const [pc] = useState(() => new PerfectCursor(cb));
+	const [pc] = useState(
+		() => new PerfectCursor(cb as (point: number[]) => void),
+	);
 
-	// biome-ignore lint/correctness/useExhaustiveDependencies: <explanation>
 	useLayoutEffect(() => {
-		if (point) pc.addPoint(point);
+		if (point) {
+			pc.addPoint(point);
+		}
+	}, [pc, point]);
+
+	useLayoutEffect(() => {
 		return () => pc.dispose();
 	}, [pc]);
 
 	const onPointChange = React.useCallback(
-		(point: number[]) => pc.addPoint(point),
+		(point: [number, number]) => pc.addPoint(point),
 		[pc],
 	);
 

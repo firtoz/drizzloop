@@ -2,6 +2,7 @@
 
 declare const self: ServiceWorkerGlobalScope;
 
+import type { WorkboxPlugin } from "workbox-core";
 import { ExpirationPlugin } from "workbox-expiration";
 import { cleanupOutdatedCaches, precacheAndRoute } from "workbox-precaching";
 import { registerRoute, setCatchHandler } from "workbox-routing";
@@ -39,7 +40,7 @@ registerRoute(
 			new ExpirationPlugin({
 				maxEntries: 50,
 			}),
-		],
+		] as WorkboxPlugin[],
 	}),
 );
 
@@ -64,7 +65,7 @@ registerRoute(
 				maxEntries: 60,
 				maxAgeSeconds: 30 * 24 * 60 * 60, // 30 Days
 			}),
-		],
+		] as WorkboxPlugin[],
 	}),
 );
 
@@ -78,7 +79,7 @@ registerRoute(
 				maxEntries: 100,
 				maxAgeSeconds: 60 * 60 * 24, // 1 day
 			}),
-		],
+		] as WorkboxPlugin[],
 	}),
 );
 
@@ -93,7 +94,7 @@ registerRoute(
 				maxEntries: 60,
 				maxAgeSeconds: 30 * 24 * 60 * 60, // 30 Days
 			}),
-		],
+		] as WorkboxPlugin[],
 	}),
 );
 
@@ -112,7 +113,7 @@ registerRoute(
 				maxEntries: 50,
 				maxAgeSeconds: 30 * 24 * 60 * 60, // 30 Days
 			}),
-		],
+		] as WorkboxPlugin[],
 	}),
 );
 

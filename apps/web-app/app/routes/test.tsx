@@ -1,8 +1,8 @@
 // import sqlite3InitModule, { type Sqlite3Static } from "@sqlite.org/sqlite-wasm";
 import { useEffect, useState } from "react";
 import * as schema from "schema/schema";
-import { useWorker, WorkerProvider } from "../hooks/useWorker";
 import { StorageNotification } from "../components/StorageNotification";
+import { WorkerProvider, useWorker } from "../hooks/useWorker";
 
 // // const worker = new MyWorker()
 

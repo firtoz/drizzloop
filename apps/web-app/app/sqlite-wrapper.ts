@@ -1,5 +1,5 @@
 import type { DB, SQLiteAPI, Statement } from "wa-sqlite";
-import { SQLITE_ROW, SQLITE_DONE } from "wa-sqlite";
+import { SQLITE_DONE, SQLITE_ROW } from "wa-sqlite";
 
 // Simple logging utility
 const log = (...args: unknown[]) => {

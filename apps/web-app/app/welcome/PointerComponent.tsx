@@ -14,7 +14,7 @@ export const PointerComponent = ({
 	const rPointer = useRef<SVGSVGElement>(null);
 
 	const animatePointer = useCallback(
-		(point: number[]) => {
+		(point: [number, number]) => {
 			const current = rPointer.current;
 			const container = containerRef.current;
 			if (!current || !container) return;

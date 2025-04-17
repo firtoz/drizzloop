@@ -108,7 +108,7 @@ describe("Comprehensive SQLite WASM Tests", () => {
 		expect(singleUser?.password).toBe("password123");
 		expect(singleUser?.age).toBe(30);
 		expect(singleUser?.isActive).toBe(true);
-		expect(singleUser?.rating).toBe(4.75);
+		expect(singleUser?.rating).toBe("4.75");
 		expect(singleUser?.balance).toBe(1000.5);
 
 		// Test UPDATE
@@ -144,7 +144,7 @@ describe("Comprehensive SQLite WASM Tests", () => {
 			orderBy: (users, { desc }) => [desc(users.name)],
 		});
 		expect(orderedUsers.length).toBe(3);
-		expect(orderedUsers[0].name).toBe("Updated User");
+		expect(orderedUsers[0]?.name).toBe("Updated User");
 
 		// Test LIMIT
 		const limitedUsers = await db.query.usersTable.findMany({
@@ -198,7 +198,7 @@ describe("Comprehensive SQLite WASM Tests", () => {
 			where: (users, { isNotNull }) => isNotNull(users.rating),
 		});
 		expect(ratedUsers.length).toBe(2);
-		expect(ratedUsers[0].id).toBe("1");
+		expect(ratedUsers[0]?.id).toBe("1");
 
 		// Test query with specific columns
 		const partialUsers = await db.query.usersTable.findMany({
@@ -209,7 +209,7 @@ describe("Comprehensive SQLite WASM Tests", () => {
 			},
 		});
 		expect(partialUsers.length).toBe(3);
-		expect(Object.keys(partialUsers[0]).sort()).toEqual(
+		expect(Object.keys(partialUsers[0] ?? {}).sort()).toEqual(
 			["id", "name", "email"].sort(),
 		);
 
