@@ -10,34 +10,14 @@ import {
 import * as schema from "schema/schema";
 import { drizzleWorkerProxy } from "../drizzleWorkerProxy";
 import MyWorker from "../worker?worker";
-
-// Define types for diagnostics information
-type Diagnostics = {
-	isSecureContext: boolean;
-	hasOPFS: boolean;
-	hasFileSystem: boolean;
-	hasStorage: boolean;
-	hasStoragePersist: boolean;
-	navigatorStorageEstimate: StorageEstimate | null;
-	headers: {
-		coep: string | null;
-		coop: string | null;
-	};
-};
-
-// Define types for worker messages and status
-type StorageStatus = {
-	status: "persistent" | "transient";
-	reason?: "indexeddb-error";
-	diagnostics?: Diagnostics;
-};
+import type { WorkerResponse, WorkerStorageStatus } from "~/worker";
 
 type WorkerContextType = {
 	worker: Worker | null;
 	db: SqliteRemoteDatabase<typeof schema> | null;
 	isReady: boolean;
 	logs: string[];
-	storageStatus: StorageStatus | null;
+	storageStatus: WorkerStorageStatus | null;
 };
 
 // Create context
@@ -56,9 +36,8 @@ const isBrowser = typeof window !== "undefined";
 export function WorkerProvider({ children }: { children: ReactNode }) {
 	const [isReady, setIsReady] = useState(false);
 	const [logs, setLogs] = useState<string[]>([]);
-	const [storageStatus, setStorageStatus] = useState<StorageStatus | null>(
-		null,
-	);
+	const [storageStatus, setStorageStatus] =
+		useState<WorkerStorageStatus | null>(null);
 
 	const worker = useMemo(() => {
 		// Only create worker in browser environment
@@ -78,7 +57,7 @@ export function WorkerProvider({ children }: { children: ReactNode }) {
 
 		const abortController = new AbortController();
 
-		const handleMessage = (e: MessageEvent) => {
+		const handleMessage = (e: MessageEvent<WorkerResponse>) => {
 			const data = e.data;
 
 			if (data.type === "log" || data.type === "error") {
@@ -86,7 +65,7 @@ export function WorkerProvider({ children }: { children: ReactNode }) {
 			} else if (data.type === "ready") {
 				setIsReady(true);
 			} else if (data.type === "storage-status") {
-				setStorageStatus(data);
+				setStorageStatus(data.status);
 				console.log("Storage status:", data);
 			} else if (data.type === "check-cross-origin-resources") {
 				// Handle request to check cross-origin resources
@@ -141,11 +120,6 @@ export function WorkerProvider({ children }: { children: ReactNode }) {
 
 				// Send the results back to the worker
 				if (worker) {
-					worker.postMessage({
-						type: "log",
-						payload: message,
-					});
-
 					// Log a few examples
 					const samplesToLog = crossOriginResources.slice(0, 3);
 					samplesToLog.forEach((resource, i) => {
@@ -159,21 +133,13 @@ export function WorkerProvider({ children }: { children: ReactNode }) {
 							src = resource.href;
 						}
 
-						worker.postMessage({
-							type: "log",
-							payload: `Cross-origin resource ${i + 1}: ${resource.tagName.toLowerCase()} - ${src}`,
-						});
+						console.log(
+							`Cross-origin resource ${i + 1}: ${resource.tagName.toLowerCase()} - ${src}`,
+						);
 					});
 				}
 			} else {
 				console.log("No cross-origin resources detected");
-				if (worker) {
-					worker.postMessage({
-						type: "log",
-						payload:
-							"No cross-origin resources detected that could affect isolation",
-					});
-				}
 			}
 		} catch (e) {
 			console.error("Error checking cross-origin resources:", e);

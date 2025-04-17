@@ -1,21 +1,8 @@
 import type { DrizzleConfig } from "drizzle-orm";
-import { drizzle } from "drizzle-orm/sqlite-proxy";
+import { drizzle, type SqliteRemoteDatabase } from "drizzle-orm/sqlite-proxy";
 import { v7 } from "uuid";
-
-type WorkerMessage = {
-	id: string;
-	type: "query";
-	sql: string;
-	params: unknown[];
-	method: "run" | "all" | "values" | "get";
-};
-
-type WorkerResponse = {
-	id: string;
-	type: "response";
-	result: { rows: unknown[] | unknown[][] };
-	error?: string;
-};
+import type { WorkerMessage, WorkerResponse } from "./worker";
+import type { BindingSpec } from "@sqlite.org/sqlite-wasm";
 
 type PendingRequest = {
 	resolve: (value: {
@@ -29,13 +16,17 @@ export const drizzleWorkerProxy = <
 >(
 	worker: Worker,
 	config?: DrizzleConfig<TSchema>,
-) => {
+): SqliteRemoteDatabase<TSchema> => {
 	// Create a map to store pending requests
 	const pendingRequests = new Map<string, PendingRequest>();
 
+	const sendMessage = (message: WorkerMessage) => {
+		worker.postMessage(message);
+	};
+
 	// Set up a single message handler for all requests
-	worker.addEventListener("message", (event: MessageEvent) => {
-		const data = event.data as WorkerResponse;
+	worker.addEventListener("message", (event: MessageEvent<WorkerResponse>) => {
+		const data = event.data;
 
 		if (data.type === "response" && pendingRequests.has(data.id)) {
 			const { resolve, reject } = pendingRequests.get(
@@ -53,7 +44,7 @@ export const drizzleWorkerProxy = <
 
 	const executeQuery = async (
 		sql: string,
-		params: unknown[],
+		params: BindingSpec,
 		method: "run" | "all" | "values" | "get",
 	) => {
 		return new Promise<{ rows: unknown[] | unknown[][] }>((resolve, reject) => {
@@ -70,7 +61,7 @@ export const drizzleWorkerProxy = <
 				method,
 			};
 
-			worker.postMessage(message);
+			sendMessage(message);
 		});
 	};
 
@@ -81,14 +72,14 @@ export const drizzleWorkerProxy = <
 	// Add helper methods for raw SQL execution
 	return Object.assign(db, {
 		// Execute a query that doesn't return rows (INSERT, UPDATE, DELETE, etc.)
-		run: async (sql: string, params: unknown[] = []) => {
+		run: async (sql: string, params: BindingSpec = []) => {
 			await executeQuery(sql, params, "run");
 		},
 
 		// Execute a query and return all rows
 		all: async <T = Record<string, unknown>>(
 			sql: string,
-			params: unknown[] = [],
+			params: BindingSpec = [],
 		): Promise<T[]> => {
 			const result = await executeQuery(sql, params, "all");
 			return result.rows as unknown as T[];
@@ -97,7 +88,7 @@ export const drizzleWorkerProxy = <
 		// Execute a query and return a single row
 		get: async <T = Record<string, unknown>>(
 			sql: string,
-			params: unknown[] = [],
+			params: BindingSpec = [],
 		): Promise<T | undefined> => {
 			const result = await executeQuery(sql, params, "get");
 			if (Array.isArray(result.rows) && result.rows.length > 0) {
@@ -109,7 +100,7 @@ export const drizzleWorkerProxy = <
 		// Execute a query and return values (array of arrays)
 		values: async <T = unknown[][]>(
 			sql: string,
-			params: unknown[] = [],
+			params: BindingSpec = [],
 		): Promise<T> => {
 			const result = await executeQuery(sql, params, "values");
 			return result.rows as unknown as T;

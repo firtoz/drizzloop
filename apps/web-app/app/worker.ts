@@ -3,6 +3,7 @@
 import sqlite3InitModule, {
 	type Sqlite3Static,
 	type Database,
+	type BindingSpec,
 } from "@sqlite.org/sqlite-wasm";
 // @ts-expect-error
 import migrations from "schema/migrations";
@@ -10,10 +11,19 @@ import * as schema from "schema/schema";
 import { drizzleSqliteWasm } from "./drizzleSqliteWasm";
 import { migrate } from "./utils/sqlite-wasm-migrator";
 
+export type WorkerMessage = {
+	type: "query";
+	id: string;
+	sql: string;
+	params: BindingSpec;
+	method: "run" | "all" | "values" | "get";
+};
+
 // Define types for diagnostics information
-type Diagnostics = {
+export type StorageDiagnostics = {
 	isSecureContext: boolean;
 	hasOPFS: boolean;
+	opfsAccessible: boolean;
 	hasFileSystem: boolean;
 	hasStorage: boolean;
 	hasStoragePersist: boolean;
@@ -22,39 +32,65 @@ type Diagnostics = {
 		coep: string | null;
 		coop: string | null;
 	};
-	opfsAccessible: boolean;
 };
 
-type WorkerMessage = {
-	id: string;
-	type: "query";
-	sql: string;
-	// biome-ignore lint/suspicious/noExplicitAny: <explanation>
-	params: any[];
-	method: "run" | "all" | "values" | "get";
-};
+type StorageTransientStatusReason =
+	| "indexeddb-error"
+	| "not-secure-context"
+	| "not-cross-origin-isolated";
 
-type WorkerResponse = {
-	id: string;
-	type: "response";
-	result: { rows: unknown[] | unknown[][] };
-	error?: string;
+// Define types for worker messages and status
+export type WorkerStorageStatus =
+	| {
+			status: "persistent";
+			diagnostics: StorageDiagnostics;
+	  }
+	| {
+			status: "transient";
+			reason: StorageTransientStatusReason;
+			diagnostics: StorageDiagnostics;
+	  };
+
+export type WorkerResponse =
+	| {
+			id: string;
+			type: "response";
+			result: { rows: unknown[] | unknown[][] };
+			error?: string;
+	  }
+	| {
+			type: "log" | "error";
+			payload: string;
+	  }
+	| {
+			type: "storage-status";
+			status: WorkerStorageStatus;
+	  }
+	| {
+			type: "ready";
+	  }
+	| {
+			type: "check-cross-origin-resources";
+	  };
+
+const sendMessage = (message: WorkerResponse) => {
+	postMessage(message);
 };
 
 export const log = (...args: unknown[]) => {
 	console.log(`[${new Date().toISOString()}]`, ...args);
-	postMessage({ type: "log", payload: args.join(" ") });
+	sendMessage({ type: "log", payload: args.join(" ") });
 };
 
 const error = (...args: unknown[]) => {
 	console.error(`[${new Date().toISOString()}]`, ...args);
-	postMessage({ type: "error", payload: args.join(" ") });
+	sendMessage({ type: "error", payload: args.join(" ") });
 };
 
 let sqliteDb: Database | null = null;
 let db: ReturnType<typeof drizzleSqliteWasm> | null = null;
 
-const getDiagnostics = async (): Promise<Diagnostics> => {
+const getDiagnostics = async (): Promise<StorageDiagnostics> => {
 	const isSecureContext = self.isSecureContext;
 	const hasOPFS = "storage" in navigator && "getDirectory" in navigator.storage;
 	const hasFileSystem = "showOpenFilePicker" in self;
@@ -244,7 +280,7 @@ const checkCrossOriginIsolationIssues = () => {
 try {
 	if (typeof document !== "undefined") {
 		// We can't access the document directly from a worker, so we need to send a message to the main thread
-		self.postMessage({ type: "check-cross-origin-resources" });
+		sendMessage({ type: "check-cross-origin-resources" });
 	}
 } catch (e) {
 	// Ignore errors, this is just a diagnostic
@@ -301,45 +337,50 @@ const start = async (sqlite3: Sqlite3Static) => {
 		persistenceRequested ? "Successful" : "Failed",
 	);
 
-	const storageStatus: {
-		status: "persistent" | "transient";
-		reason?: string;
-		diagnostics?: Diagnostics;
-	} = {
-		status: "transient",
-		diagnostics,
-	};
+	// const storageStatus: StorageStatus = {
+	// 	status: "transient",
+	// 	diagnostics,
+	// };
+	let storageStatus: WorkerStorageStatus;
 
 	if ("opfs" in sqlite3) {
 		sqliteDb = new sqlite3.oo1.OpfsDb("/mydb.sqlite3");
 		log("OPFS is available, created persisted database at", sqliteDb.filename);
-		storageStatus.status = "persistent";
+		storageStatus = {
+			status: "persistent",
+			diagnostics,
+		};
 	} else {
 		sqliteDb = new sqlite3.oo1.DB("/mydb.sqlite3", "c");
 		log("OPFS is not available, created transient database", sqliteDb.filename);
-		storageStatus.status = "transient";
 
-		// Provide more detailed reason
-		storageStatus.reason = "indexeddb-error"; // Default reason
+		let reason: StorageTransientStatusReason;
 
 		if (!diagnostics.isSecureContext) {
-			storageStatus.reason = "not-secure-context";
+			reason = "not-secure-context";
 			log("OPFS unavailable reason: Not in a secure context (HTTPS required)");
 		} else if (!self.crossOriginIsolated) {
-			storageStatus.reason = "not-cross-origin-isolated";
+			reason = "not-cross-origin-isolated";
 			log("OPFS unavailable reason: Site is not cross-origin isolated");
 			log(
 				"Required headers: Cross-Origin-Embedder-Policy: require-corp and Cross-Origin-Opener-Policy: same-origin",
 			);
 		} else {
+			reason = "indexeddb-error";
 			log(
 				"OPFS unavailable reason: Unknown (possibly browser support or permissions)",
 			);
 		}
+
+		storageStatus = {
+			status: "transient",
+			reason,
+			diagnostics,
+		};
 	}
 
 	// Send storage status to main thread
-	self.postMessage({ type: "storage-status", ...storageStatus });
+	sendMessage({ type: "storage-status", status: storageStatus });
 
 	try {
 		db = drizzleSqliteWasm(sqliteDb, {
@@ -433,7 +474,7 @@ const handleMessage = async (event: MessageEvent) => {
 			result,
 		};
 
-		self.postMessage(response);
+		sendMessage(response);
 	} catch (e) {
 		const errorMessage = e instanceof Error ? e.message : String(e);
 
@@ -444,7 +485,7 @@ const handleMessage = async (event: MessageEvent) => {
 			error: errorMessage,
 		};
 
-		self.postMessage(response);
+		sendMessage(response);
 		error("Error executing query:", errorMessage);
 	}
 };
@@ -466,4 +507,4 @@ sqlite3InitModule({
 	}
 });
 // Notify that the worker is loaded
-self.postMessage({ type: "ready" });
+sendMessage({ type: "ready" });
