@@ -1,6 +1,6 @@
 # Integration Tests
 
-This package contains integration tests for the Remix Cloudflare Workers application using Vitest and the Cloudflare Workers test pool.
+This package contains integration tests for the React Router Cloudflare Workers application using Vitest and the Cloudflare Workers test pool.
 
 ## Setup
 
