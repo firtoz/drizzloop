@@ -5,11 +5,11 @@ import sqlite3InitModule, {
 import { eq } from "drizzle-orm";
 
 import type { SqliteRemoteDatabase } from "drizzle-orm/sqlite-proxy";
+import { brand } from "schema/Branded";
 import { drizzleSqliteWasm } from "web-app/app/drizzleSqliteWasm";
 import { migrate } from "web-app/app/utils/sqlite-wasm-migrator";
 import migrations from "../drizzle/migrations";
 import { type UserId, usersTable } from "./schema";
-import { brand } from "schema/Branded";
 
 describe("Comprehensive SQLite WASM Tests", () => {
 	let sqlite3: Sqlite3Static;

@@ -1,14 +1,30 @@
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import { useWorker } from "../hooks/useWorker";
 
 // Check if we're in a browser environment
 const isBrowser = typeof window !== "undefined";
 
 export function StorageNotification() {
+	// TODO use an actual toast for this
+
 	// Only use the worker hook in browser environments
 	const { storageStatus } = isBrowser ? useWorker() : { storageStatus: null };
 	const [isDismissed, setIsDismissed] = useState(false);
 	const [showDetails, setShowDetails] = useState(false);
+
+	const getMessage = useCallback(() => {
+		if (!storageStatus) {
+			return null;
+		}
+
+		if (storageStatus.status === "transient") {
+			if (storageStatus.reason === "indexeddb-error") {
+				return "Failed to create persistent storage using IndexedDB. Your data will not be saved when you close the app.";
+			}
+			return "Your data is being stored temporarily and will be lost when you close the app.";
+		}
+		return "";
+	}, [storageStatus]);
 
 	if (
 		!isBrowser ||
@@ -18,16 +34,6 @@ export function StorageNotification() {
 	) {
 		return null;
 	}
-
-	const getMessage = () => {
-		if (storageStatus.status === "transient") {
-			if (storageStatus.reason === "indexeddb-error") {
-				return "Failed to create persistent storage using IndexedDB. Your data will not be saved when you close the app.";
-			}
-			return "Your data is being stored temporarily and will be lost when you close the app.";
-		}
-		return "";
-	};
 
 	return (
 		<div className="fixed bottom-4 right-4 max-w-md bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 p-4 rounded shadow-lg z-50">

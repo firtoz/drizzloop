@@ -4,12 +4,12 @@ import sqlite3InitModule, {
 } from "@sqlite.org/sqlite-wasm";
 import { eq } from "drizzle-orm";
 
+import { brand } from "schema/Branded";
 import {
 	type DrizzleSqliteWasmConfig,
 	drizzleSqliteWasm,
 } from "web-app/app/drizzleSqliteWasm";
 import { type UserId, usersTable } from "./schema";
-import { brand } from "schema/Branded";
 
 describe("drizzle-sqlite-wasm", () => {
 	let sqlite3: Sqlite3Static;

@@ -6,8 +6,7 @@ import {
 	sqliteTable,
 	text as sqliteText,
 } from "drizzle-orm/sqlite-core";
-
-type Branded<T, K extends string> = T & { __brand: K };
+import type { Branded } from "schema/Branded";
 
 export type UserId = Branded<string, "UserId">;
 

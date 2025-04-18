@@ -5,12 +5,12 @@ import sqlite3InitModule, {
 	type Database,
 	type BindingSpec,
 } from "@sqlite.org/sqlite-wasm";
+import { sql } from "drizzle-orm";
 // @ts-expect-error
 import migrations from "schema/migrations";
 import * as schema from "schema/schema";
 import { drizzleSqliteWasm } from "./drizzleSqliteWasm";
 import { migrate } from "./utils/sqlite-wasm-migrator";
-import { sql } from "drizzle-orm";
 
 export type WorkerMessage = {
 	type: "query";
