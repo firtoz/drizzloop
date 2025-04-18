@@ -2,6 +2,7 @@ import type { SqliteRemoteDatabase } from "drizzle-orm/sqlite-proxy";
 import {
 	type ReactNode,
 	createContext,
+	useCallback,
 	useContext,
 	useEffect,
 	useMemo,
@@ -16,13 +17,14 @@ import type {
 import { drizzleWorkerProxy } from "../drizzleWorkerProxy";
 import MyWorker from "../worker?worker";
 
-// @ts-expect-error
 import migrations from "schema/migrations";
 import { migrate } from "../utils/sqlite-wasm-migrator";
 
-type LogEntry = 
-	| { type: 'log'; message: string }
-	| { type: 'error'; message: string };
+type LogEntry =
+	| { type: "log"; message: string }
+	| { type: "error"; message: string };
+
+type WorkerEventListener = (message: WorkerResponse) => void;
 
 type WorkerContextType = {
 	worker: Worker | null;
@@ -30,6 +32,12 @@ type WorkerContextType = {
 	isReady: boolean;
 	logs: LogEntry[];
 	storageStatus: WorkerStorageStatus | null;
+	addEventListener: (
+		listener: WorkerEventListener,
+		options?: {
+			signal?: AbortSignal;
+		},
+	) => void;
 };
 
 // Create context
@@ -39,6 +47,7 @@ const WorkerContext = createContext<WorkerContextType>({
 	isReady: false,
 	logs: [],
 	storageStatus: null,
+	addEventListener: (_listener, _options) => {},
 });
 
 // Check if we're in a browser environment
@@ -60,6 +69,31 @@ export function WorkerProvider({ children }: { children: ReactNode }) {
 		return null;
 	}, []);
 
+	const eventHandlers = useMemo(() => {
+		return [] as Array<WorkerEventListener>;
+	}, []);
+
+	const addEventListener = useCallback(
+		(
+			listener: WorkerEventListener,
+			options: {
+				signal?: AbortSignal;
+			} = {},
+		) => {
+			if (options.signal) {
+				options.signal.addEventListener("abort", () => {
+					const index = eventHandlers.indexOf(listener);
+					if (index !== -1) {
+						eventHandlers.splice(index, 1);
+					}
+				});
+			}
+
+			eventHandlers.push(listener);
+		},
+		[eventHandlers],
+	);
+
 	useEffect(() => {
 		if (!worker) return;
 
@@ -70,10 +104,13 @@ export function WorkerProvider({ children }: { children: ReactNode }) {
 
 			switch (data.type) {
 				case "log":
-					setLogs((prev) => [...prev, { type: 'log', message: data.payload }]);
+					setLogs((prev) => [...prev, { type: "log", message: data.payload }]);
 					break;
 				case "error":
-					setLogs((prev) => [...prev, { type: 'error', message: data.payload }]);
+					setLogs((prev) => [
+						...prev,
+						{ type: "error", message: data.payload },
+					]);
 					break;
 				case "ready":
 					setWorkerIsReady(true);
@@ -118,14 +155,23 @@ export function WorkerProvider({ children }: { children: ReactNode }) {
 
 		(async () => {
 			try {
-				setLogs((prev) => [...prev, { type: 'log', message: "useWorker: Migrating..." }]);
+				setLogs((prev) => [
+					...prev,
+					{ type: "log", message: "useWorker: Migrating..." },
+				]);
 				await migrate(availableDb, migrations, true);
-				setLogs((prev) => [...prev, { type: 'log', message: "useWorker: Migration complete" }]);
+				setLogs((prev) => [
+					...prev,
+					{ type: "log", message: "useWorker: Migration complete" },
+				]);
 				setIsReady(true);
 			} catch (e) {
 				setLogs((prev) => [
 					...prev,
-					{ type: 'error', message: `useWorker: Migration failed: ${e instanceof Error ? e.message : String(e)}` },
+					{
+						type: "error",
+						message: `useWorker: Migration failed: ${e instanceof Error ? e.message : String(e)}`,
+					},
 				]);
 			}
 		})();
@@ -195,12 +241,13 @@ export function WorkerProvider({ children }: { children: ReactNode }) {
 		}
 	};
 
-	const value = {
+	const value: WorkerContextType = {
 		worker,
 		db,
 		isReady,
 		logs,
 		storageStatus,
+		addEventListener,
 	};
 
 	return (
@@ -209,10 +256,29 @@ export function WorkerProvider({ children }: { children: ReactNode }) {
 }
 
 // Hook to use the worker context
-export function useWorker() {
+export function useWorker({
+	eventListener,
+}: { eventListener?: WorkerEventListener } = {}) {
 	const context = useContext(WorkerContext);
 	if (context === undefined) {
 		throw new Error("useWorker must be used within a WorkerProvider");
 	}
+
+	useEffect(() => {
+		if (!eventListener) {
+			return;
+		}
+
+		const abortController = new AbortController();
+
+		context.addEventListener(eventListener, {
+			signal: abortController.signal,
+		});
+
+		return () => {
+			abortController.abort();
+		};
+	}, [context.addEventListener, eventListener]);
+
 	return context;
 }

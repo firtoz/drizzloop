@@ -1,13 +1,7 @@
 import { sql } from "drizzle-orm";
 import type { MigrationMeta } from "drizzle-orm/migrator";
 import type { SqliteRemoteDatabase } from "drizzle-orm/sqlite-proxy";
-
-interface MigrationConfig {
-	journal: {
-		entries: { idx: number; when: number; tag: string; breakpoints: boolean }[];
-	};
-	migrations: Record<string, string>;
-}
+import type { MigrationConfig } from "schema/MigrationConfig";
 
 function readMigrationFiles({
 	journal,
@@ -114,7 +108,7 @@ export async function migrate<TSchema extends Record<string, unknown>>(
 			}
 		} catch (error: unknown) {
 			const e = error instanceof Error ? error : new Error(String(error));
-			console.error("[SceneDurableObjectSQL] Database migration failed:", {
+			console.error("[Sqlite WASM Migrator] Database migration failed:", {
 				error: e,
 				errorMessage: e.message,
 				errorStack: e.stack,

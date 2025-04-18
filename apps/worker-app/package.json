@@ -20,7 +20,7 @@
 	},
 	"devDependencies": {
 		"@biomejs/biome": "^1.9.4",
-		"@cloudflare/workers-types": "^4.20250417.0",
+		"@cloudflare/workers-types": "^4.20250418.0",
 		"@greybox/biome-config": "^2.1.2",
 		"@greybox/shared-tsconfig": "^2.1.2",
 		"@types/node": "^22.14.1",

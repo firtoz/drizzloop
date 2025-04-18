@@ -1,13 +1,7 @@
 import { sql } from "drizzle-orm";
 import type { DrizzleSqliteDODatabase } from "drizzle-orm/durable-sqlite";
 import type { MigrationMeta } from "drizzle-orm/migrator";
-
-interface MigrationConfig {
-	journal: {
-		entries: { idx: number; when: number; tag: string; breakpoints: boolean }[];
-	};
-	migrations: Record<string, string>;
-}
+import type { MigrationConfig } from "schema/MigrationConfig";
 
 function readMigrationFiles({
 	journal,
