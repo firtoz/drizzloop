@@ -5,20 +5,21 @@ import sqlite3InitModule, {
 	type Database,
 	type BindingSpec,
 } from "@sqlite.org/sqlite-wasm";
-import { sql } from "drizzle-orm";
-// @ts-expect-error
-import migrations from "schema/migrations";
 import * as schema from "schema/schema";
 import { drizzleSqliteWasm } from "./drizzleSqliteWasm";
-import { migrate } from "./utils/sqlite-wasm-migrator";
 
-export type WorkerMessage = {
-	type: "query";
-	id: string;
-	sql: string;
-	params: BindingSpec;
-	method: "run" | "all" | "values" | "get";
-};
+export type WorkerMessage =
+	| {
+			type: "setup";
+			dbName: string;
+	  }
+	| {
+			type: "query";
+			id: string;
+			sql: string;
+			params: BindingSpec;
+			method: "run" | "all" | "values" | "get";
+	  };
 
 // Define types for diagnostics information
 export type StorageDiagnostics = {
@@ -66,6 +67,9 @@ export type WorkerResponse =
 	| {
 			type: "storage-status";
 			status: WorkerStorageStatus;
+	  }
+	| {
+			type: "request-setup";
 	  }
 	| {
 			type: "ready";
@@ -205,78 +209,6 @@ const requestStoragePersistence = async (): Promise<boolean> => {
 	}
 };
 
-// Function to check for potential cross-origin isolation issues
-const checkCrossOriginIsolationIssues = () => {
-	try {
-		// Check if we're in a browser environment
-		if (typeof document === "undefined") {
-			log(
-				"Not in a browser environment, skipping cross-origin isolation check",
-			);
-			return;
-		}
-
-		// Get all scripts, images, iframes, etc.
-		const scripts = Array.from(document.getElementsByTagName("script"));
-		const images = Array.from(document.getElementsByTagName("img"));
-		const iframes = Array.from(document.getElementsByTagName("iframe"));
-		const links = Array.from(document.getElementsByTagName("link"));
-
-		const allResources = [...scripts, ...images, ...iframes, ...links];
-
-		// Check for cross-origin resources
-		const crossOriginResources = allResources.filter((el) => {
-			// Handle different element types
-			let src: string | null = null;
-			if ("src" in el && typeof el.src === "string") {
-				src = el.src;
-			} else if ("href" in el && typeof el.href === "string") {
-				src = el.href;
-			}
-
-			if (!src) return false;
-
-			try {
-				const resourceUrl = new URL(src, window.location.href);
-				return resourceUrl.origin !== window.location.origin;
-			} catch (e) {
-				return false;
-			}
-		});
-
-		if (crossOriginResources.length > 0) {
-			log("Potential cross-origin isolation issues found:");
-			log(`- ${crossOriginResources.length} cross-origin resources detected`);
-			log(
-				"- These resources need CORS headers and Cross-Origin-Resource-Policy headers",
-			);
-
-			// Log the first few resources
-			const samplesToLog = crossOriginResources.slice(0, 3);
-			samplesToLog.forEach((resource, i) => {
-				let src = "";
-				if ("src" in resource && typeof resource.src === "string") {
-					src = resource.src;
-				} else if ("href" in resource && typeof resource.href === "string") {
-					src = resource.href;
-				}
-				log(`  ${i + 1}. ${resource.tagName.toLowerCase()}: ${src}`);
-			});
-
-			if (crossOriginResources.length > 3) {
-				log(`  ... and ${crossOriginResources.length - 3} more`);
-			}
-		} else {
-			log("No cross-origin resources detected that could affect isolation");
-		}
-	} catch (e) {
-		log(
-			"Error checking for cross-origin resources:",
-			e instanceof Error ? e.message : String(e),
-		);
-	}
-};
-
 // Try to run the check if we're in a browser context
 try {
 	if (typeof document !== "undefined") {
@@ -287,7 +219,7 @@ try {
 	// Ignore errors, this is just a diagnostic
 }
 
-const start = async (sqlite3: Sqlite3Static) => {
+const start = async (sqlite3: Sqlite3Static, dbName: string) => {
 	log("Running SQLite3 version", sqlite3.version.libVersion);
 
 	// Get diagnostics information
@@ -338,18 +270,19 @@ const start = async (sqlite3: Sqlite3Static) => {
 		persistenceRequested ? "Successful" : "Failed",
 	);
 
-	const dbName = "mydb-2.sqlite3";
 	let storageStatus: WorkerStorageStatus;
 
+	const dbFileName = `${dbName}.sqlite3`;
+
 	if ("opfs" in sqlite3) {
-		sqliteDb = new sqlite3.oo1.OpfsDb(dbName);
+		sqliteDb = new sqlite3.oo1.OpfsDb(dbFileName);
 		log("OPFS is available, created persisted database at", sqliteDb.filename);
 		storageStatus = {
 			status: "persistent",
 			diagnostics,
 		};
 	} else {
-		sqliteDb = new sqlite3.oo1.DB(dbName, "c");
+		sqliteDb = new sqlite3.oo1.DB(dbFileName, "c");
 		log("OPFS is not available, created transient database", sqliteDb.filename);
 
 		let reason: StorageTransientStatusReason;
@@ -385,15 +318,11 @@ const start = async (sqlite3: Sqlite3Static) => {
 			schema,
 		});
 
-		log("Migrating...");
-		await migrate(db, migrations, true);
-		log("Migration complete");
-
 		// Database is now ready for use
 		log("Database ready for use");
 
-		// Set up message handler for queries
-		self.addEventListener("message", handleMessage);
+		// Notify that the worker is loaded
+		sendMessage({ type: "ready" });
 	} catch (err) {
 		if (err instanceof Error) {
 			error(err.name, err.message);
@@ -403,8 +332,19 @@ const start = async (sqlite3: Sqlite3Static) => {
 	}
 };
 
+let sqliteInstance: Sqlite3Static | null = null;
+
 const handleMessage = async (event: MessageEvent) => {
 	const message = event.data as WorkerMessage;
+
+	if (message.type === "setup") {
+		if (!sqliteInstance) {
+			error("Wait for request-setup!");
+		} else {
+			start(sqliteInstance, message.dbName);
+		}
+		return;
+	}
 
 	if (message.type !== "query" || !sqliteDb) {
 		return;
@@ -488,14 +428,21 @@ const handleMessage = async (event: MessageEvent) => {
 	}
 };
 
+self.addEventListener("message", handleMessage);
+
 log("Loading and initializing SQLite3 module...");
 sqlite3InitModule({
 	print: log,
 	printErr: error,
 }).then((sqlite3) => {
+	sqliteInstance = sqlite3;
+
 	log("Done initializing. Running...");
 	try {
-		start(sqlite3);
+		sendMessage({
+			type: "request-setup",
+		});
+		// start(sqlite3);
 	} catch (err) {
 		if (err instanceof Error) {
 			error(err.name, err.message);
@@ -504,5 +451,3 @@ sqlite3InitModule({
 		}
 	}
 });
-// Notify that the worker is loaded
-sendMessage({ type: "ready" });

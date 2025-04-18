@@ -8,15 +8,27 @@ import {
 	useState,
 } from "react";
 import * as schema from "schema/schema";
-import type { WorkerResponse, WorkerStorageStatus } from "~/worker";
+import type {
+	WorkerMessage,
+	WorkerResponse,
+	WorkerStorageStatus,
+} from "~/worker";
 import { drizzleWorkerProxy } from "../drizzleWorkerProxy";
 import MyWorker from "../worker?worker";
+
+// @ts-expect-error
+import migrations from "schema/migrations";
+import { migrate } from "../utils/sqlite-wasm-migrator";
+
+type LogEntry = 
+	| { type: 'log'; message: string }
+	| { type: 'error'; message: string };
 
 type WorkerContextType = {
 	worker: Worker | null;
 	db: SqliteRemoteDatabase<typeof schema> | null;
 	isReady: boolean;
-	logs: string[];
+	logs: LogEntry[];
 	storageStatus: WorkerStorageStatus | null;
 };
 
@@ -35,7 +47,8 @@ const isBrowser = typeof window !== "undefined";
 // Provider component
 export function WorkerProvider({ children }: { children: ReactNode }) {
 	const [isReady, setIsReady] = useState(false);
-	const [logs, setLogs] = useState<string[]>([]);
+	const [workerIsReady, setWorkerIsReady] = useState(false);
+	const [logs, setLogs] = useState<LogEntry[]>([]);
 	const [storageStatus, setStorageStatus] =
 		useState<WorkerStorageStatus | null>(null);
 
@@ -47,29 +60,38 @@ export function WorkerProvider({ children }: { children: ReactNode }) {
 		return null;
 	}, []);
 
-	const db = useMemo(() => {
-		if (!isReady || !worker) return null;
-		return drizzleWorkerProxy(worker, { schema });
-	}, [worker, isReady]);
-
 	useEffect(() => {
 		if (!worker) return;
 
 		const abortController = new AbortController();
 
-		const handleMessage = (e: MessageEvent<WorkerResponse>) => {
+		const handleMessage = async (e: MessageEvent<WorkerResponse>) => {
 			const data = e.data;
 
-			if (data.type === "log" || data.type === "error") {
-				setLogs((prev) => [...prev, data.payload]);
-			} else if (data.type === "ready") {
-				setIsReady(true);
-			} else if (data.type === "storage-status") {
-				setStorageStatus(data.status);
-				console.log("Storage status:", data);
-			} else if (data.type === "check-cross-origin-resources") {
-				// Handle request to check cross-origin resources
-				checkCrossOriginResources();
+			switch (data.type) {
+				case "log":
+					setLogs((prev) => [...prev, { type: 'log', message: data.payload }]);
+					break;
+				case "error":
+					setLogs((prev) => [...prev, { type: 'error', message: data.payload }]);
+					break;
+				case "ready":
+					setWorkerIsReady(true);
+					break;
+				case "storage-status":
+					setStorageStatus(data.status);
+					console.log("Storage status:", data);
+					break;
+				case "check-cross-origin-resources":
+					// Handle request to check cross-origin resources
+					checkCrossOriginResources();
+					break;
+				case "request-setup":
+					worker.postMessage({
+						type: "setup",
+						dbName: "test",
+					} satisfies WorkerMessage);
+					break;
 			}
 		};
 
@@ -81,6 +103,33 @@ export function WorkerProvider({ children }: { children: ReactNode }) {
 			abortController.abort();
 		};
 	}, [worker]);
+
+	const db = useMemo(() => {
+		if (!workerIsReady || !worker) return null;
+		return drizzleWorkerProxy(worker, { schema });
+	}, [worker, workerIsReady]);
+
+	useEffect(() => {
+		if (!db) {
+			return;
+		}
+
+		const availableDb = db;
+
+		(async () => {
+			try {
+				setLogs((prev) => [...prev, { type: 'log', message: "useWorker: Migrating..." }]);
+				await migrate(availableDb, migrations, true);
+				setLogs((prev) => [...prev, { type: 'log', message: "useWorker: Migration complete" }]);
+				setIsReady(true);
+			} catch (e) {
+				setLogs((prev) => [
+					...prev,
+					{ type: 'error', message: `useWorker: Migration failed: ${e instanceof Error ? e.message : String(e)}` },
+				]);
+			}
+		})();
+	}, [db]);
 
 	// Function to check for cross-origin resources that might affect isolation
 	const checkCrossOriginResources = () => {

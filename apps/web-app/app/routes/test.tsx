@@ -180,9 +180,16 @@ const TestInner = () => {
 
 					<div>
 						<h2 className="text-lg font-semibold mb-2">Worker Logs</h2>
-						<pre className="p-2 bg-gray-100 dark:bg-gray-700 rounded overflow-auto max-h-60">
-							{logs.join("\n")}
-						</pre>
+						<div className="p-2 bg-gray-100 dark:bg-gray-700 rounded overflow-auto max-h-60">
+							{logs.map((entry, index) => (
+								<div 
+									key={`${entry.type}-${entry.message}-${index}`} 
+									className={`font-mono whitespace-pre-wrap py-1 px-2 ${entry.type === 'error' ? 'bg-red-100 dark:bg-red-900/30 text-gray-800 dark:text-gray-200' : 'text-gray-800 dark:text-gray-200'}`}
+								>
+									{entry.message}
+								</div>
+							))}
+						</div>
 					</div>
 				</>
 			)}

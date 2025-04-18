@@ -44,15 +44,21 @@ registerRoute(
 	}),
 );
 
+// console.log("SW Env:", import.meta.env.MODE === "development");
+
 // Cache CSS, JS, and Web Worker requests with a Stale While Revalidate strategy
 registerRoute(
 	({ request }) =>
 		request.destination === "style" ||
 		request.destination === "script" ||
 		request.destination === "worker",
-	new StaleWhileRevalidate({
-		cacheName: "assets-cache",
-	}),
+	import.meta.env.MODE === "development"
+		? new NetworkFirst({
+				cacheName: "assets-cache",
+			})
+		: new StaleWhileRevalidate({
+				cacheName: "assets-cache",
+			}),
 );
 
 // Cache images with a Cache First strategy
