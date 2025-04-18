@@ -9,6 +9,7 @@ import {
 	drizzleSqliteWasm,
 } from "web-app/app/drizzleSqliteWasm";
 import { type UserId, usersTable } from "./schema";
+import { brand } from "schema/Branded";
 
 describe("drizzle-sqlite-wasm", () => {
 	let sqlite3: Sqlite3Static;
@@ -59,7 +60,7 @@ describe("drizzle-sqlite-wasm", () => {
 
 		// Insert a user
 		await db.insert(usersTable).values({
-			id: "1" as UserId,
+			id: brand<UserId>("1"),
 			name: "Test User",
 			email: "test@example.com",
 			password: "password123",
@@ -73,7 +74,7 @@ describe("drizzle-sqlite-wasm", () => {
 
 		// Query the user
 		const user = await db.query.usersTable.findFirst({
-			where: (users, { eq }) => eq(users.id, "1" as UserId),
+			where: (users, { eq }) => eq(users.id, brand<UserId>("1")),
 		});
 
 		// Verify the user data
@@ -120,7 +121,7 @@ describe("drizzle-sqlite-wasm", () => {
 
 		// INSERT
 		await db.insert(usersTable).values({
-			id: "1" as UserId,
+			id: brand<UserId>("1"),
 			name: "Test User",
 			email: "test@example.com",
 			password: "password123",
@@ -130,7 +131,7 @@ describe("drizzle-sqlite-wasm", () => {
 
 		// SELECT
 		let user = await db.query.usersTable.findFirst({
-			where: (users, { eq }) => eq(users.id, "1" as UserId),
+			where: (users, { eq }) => eq(users.id, brand<UserId>("1")),
 		});
 
 		expect(user?.name).toBe("Test User");
@@ -139,19 +140,19 @@ describe("drizzle-sqlite-wasm", () => {
 		await db
 			.update(usersTable)
 			.set({ name: "Updated User" })
-			.where(eq(usersTable.id, "1" as UserId));
+			.where(eq(usersTable.id, brand<UserId>("1")));
 
 		user = await db.query.usersTable.findFirst({
-			where: (users, { eq }) => eq(users.id, "1" as UserId),
+			where: (users, { eq }) => eq(users.id, brand<UserId>("1")),
 		});
 
 		expect(user?.name).toBe("Updated User");
 
 		// DELETE
-		await db.delete(usersTable).where(eq(usersTable.id, "1" as UserId));
+		await db.delete(usersTable).where(eq(usersTable.id, brand<UserId>("1")));
 
 		user = await db.query.usersTable.findFirst({
-			where: (users, { eq }) => eq(users.id, "1" as UserId),
+			where: (users, { eq }) => eq(users.id, brand<UserId>("1")),
 		});
 
 		// // The user should be null or have no properties after deletion
@@ -186,7 +187,7 @@ describe("drizzle-sqlite-wasm", () => {
 		// Insert multiple users
 		await db.insert(usersTable).values([
 			{
-				id: "1" as UserId,
+				id: brand<UserId>("1"),
 				name: "User One",
 				email: "one@example.com",
 				password: "password1",
@@ -195,7 +196,7 @@ describe("drizzle-sqlite-wasm", () => {
 				balance: 1000,
 			},
 			{
-				id: "2" as UserId,
+				id: brand<UserId>("2"),
 				name: "User Two",
 				email: "two@example.com",
 				password: "password2",
@@ -204,7 +205,7 @@ describe("drizzle-sqlite-wasm", () => {
 				balance: 2000,
 			},
 			{
-				id: "3" as UserId,
+				id: brand<UserId>("3"),
 				name: "User Three",
 				email: "three@example.com",
 				password: "password3",

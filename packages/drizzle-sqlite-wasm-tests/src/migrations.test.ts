@@ -8,6 +8,7 @@ import { drizzleSqliteWasm } from "web-app/app/drizzleSqliteWasm";
 import { migrate } from "web-app/app/utils/sqlite-wasm-migrator";
 import migrations from "../drizzle/migrations";
 import { type UserId, usersTable } from "./schema";
+import { brand } from "schema/Branded";
 
 describe("SQLite WASM Migrations", () => {
 	let sqlite3: Sqlite3Static;
@@ -81,7 +82,7 @@ describe("SQLite WASM Migrations", () => {
 
 		// Insert a user to verify the table structure
 		await db.insert(usersTable).values({
-			id: "1" as UserId,
+			id: brand<UserId>("1"),
 			name: "Test User",
 			email: "test@example.com",
 			password: "password123",
@@ -91,7 +92,7 @@ describe("SQLite WASM Migrations", () => {
 
 		// Query the user
 		const user = await db.query.usersTable.findFirst({
-			where: (users, { eq }) => eq(users.id, "1" as UserId),
+			where: (users, { eq }) => eq(users.id, brand<UserId>("1")),
 		});
 
 		expect(user).not.toBeNull();
@@ -160,7 +161,7 @@ describe("SQLite WASM Migrations", () => {
 
 		// Insert a user to verify the table structure including the new role column
 		await db.insert(usersTable).values({
-			id: "1" as UserId,
+			id: brand<UserId>("1"),
 			name: "Test User",
 			email: "test@example.com",
 			password: "password123",

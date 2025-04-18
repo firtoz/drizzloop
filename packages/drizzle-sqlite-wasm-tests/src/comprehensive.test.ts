@@ -9,6 +9,7 @@ import { drizzleSqliteWasm } from "web-app/app/drizzleSqliteWasm";
 import { migrate } from "web-app/app/utils/sqlite-wasm-migrator";
 import migrations from "../drizzle/migrations";
 import { type UserId, usersTable } from "./schema";
+import { brand } from "schema/Branded";
 
 describe("Comprehensive SQLite WASM Tests", () => {
 	let sqlite3: Sqlite3Static;
@@ -54,7 +55,7 @@ describe("Comprehensive SQLite WASM Tests", () => {
 
 		// Test INSERT
 		await db.insert(usersTable).values({
-			id: "1" as UserId,
+			id: brand<UserId>("1"),
 			name: "Test User",
 			email: "test@example.com",
 			password: "password123",
@@ -69,7 +70,7 @@ describe("Comprehensive SQLite WASM Tests", () => {
 		});
 
 		await db.insert(usersTable).values({
-			id: "2" as UserId,
+			id: brand<UserId>("2"),
 			name: "Another User",
 			email: "another@example.com",
 			password: "password456",
@@ -81,7 +82,7 @@ describe("Comprehensive SQLite WASM Tests", () => {
 		});
 
 		await db.insert(usersTable).values({
-			id: "3" as UserId,
+			id: brand<UserId>("3"),
 			name: "Third User",
 			email: "third@example.com",
 			password: "password789",
@@ -97,7 +98,7 @@ describe("Comprehensive SQLite WASM Tests", () => {
 
 		// Test GET method (single row)
 		const singleUser = await db.query.usersTable.findFirst({
-			where: (users, { eq }) => eq(users.id, "1" as UserId),
+			where: (users, { eq }) => eq(users.id, brand<UserId>("1")),
 		});
 
 		// Verify get result - only check basic fields
@@ -117,11 +118,11 @@ describe("Comprehensive SQLite WASM Tests", () => {
 			.set({
 				name: "Updated User",
 			})
-			.where(eq(usersTable.id, "1" as UserId));
+			.where(eq(usersTable.id, brand<UserId>("1")));
 
 		// Verify update
 		const updatedUser = await db.query.usersTable.findFirst({
-			where: (users, { eq }) => eq(users.id, "1" as UserId),
+			where: (users, { eq }) => eq(users.id, brand<UserId>("1")),
 		});
 
 		expect(updatedUser?.id).toBe("1");
@@ -155,7 +156,7 @@ describe("Comprehensive SQLite WASM Tests", () => {
 		// Test complex query
 		const complexResult = await db.query.usersTable.findMany({
 			where: (users, { eq, or, like }) =>
-				or(eq(users.id, "1" as UserId), like(users.email, "%another%")),
+				or(eq(users.id, brand<UserId>("1")), like(users.email, "%another%")),
 			orderBy: (users, { asc }) => [asc(users.id)],
 			limit: 5,
 		});
@@ -168,7 +169,7 @@ describe("Comprehensive SQLite WASM Tests", () => {
 		// Test count with WHERE
 		const countWithWhere = await db.$count(
 			usersTable,
-			eq(usersTable.id, "1" as UserId),
+			eq(usersTable.id, brand<UserId>("1")),
 		);
 		expect(countWithWhere).toBe(1);
 
@@ -215,7 +216,7 @@ describe("Comprehensive SQLite WASM Tests", () => {
 
 		// Test timestamp field
 		const userWithTimestamp = await db.query.usersTable.findFirst({
-			where: (users, { eq }) => eq(users.id, "1" as UserId),
+			where: (users, { eq }) => eq(users.id, brand<UserId>("1")),
 			columns: {
 				id: true,
 				createdAt: true,
@@ -229,7 +230,7 @@ describe("Comprehensive SQLite WASM Tests", () => {
 			.set({
 				name: "Returned User",
 			})
-			.where(eq(usersTable.id, "1" as UserId))
+			.where(eq(usersTable.id, brand<UserId>("1")))
 			.returning({
 				id: usersTable.id,
 				name: usersTable.name,
