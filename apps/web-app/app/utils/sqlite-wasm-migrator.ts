@@ -81,14 +81,25 @@ export async function migrate<TSchema extends Record<string, unknown>>(
 
 			const lastDbMigration = dbMigrations.at(0) ?? undefined;
 
+			const applied = 0;
+
 			for (const migration of migrations) {
 				if (
 					!lastDbMigration ||
 					// biome-ignore lint/style/noNonNullAssertion: <explanation>
 					Number(lastDbMigration[2])! < migration.folderMillis
 				) {
+					if (debug) {
+						console.log("Applying migration:", migration);
+					}
 					for (const stmt of migration.sql) {
+						if (debug) {
+							console.log("Applying statement:", stmt);
+						}
 						await tx.run(sql.raw(stmt));
+					}
+					if (debug) {
+						console.log("Inserting migration:", migration);
 					}
 					await tx.run(
 						sql`INSERT INTO ${sql.identifier(
@@ -96,6 +107,10 @@ export async function migrate<TSchema extends Record<string, unknown>>(
 						)} ("hash", "created_at") VALUES(${migration.hash}, ${migration.folderMillis})`,
 					);
 				}
+			}
+
+			if (debug) {
+				console.log("Applied", applied, "migrations");
 			}
 		} catch (error: unknown) {
 			const e = error instanceof Error ? error : new Error(String(error));

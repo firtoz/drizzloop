@@ -1,4 +1,4 @@
-import type { Pointer } from "example-do/types";
+import type { ExamplePointer } from "example-do/types";
 import { useCallback, useLayoutEffect, useRef } from "react";
 import { usePerfectCursor } from "./hooks/usePerfectCursor";
 
@@ -7,7 +7,7 @@ export const PointerComponent = ({
 	color,
 	containerRef,
 }: {
-	pointer: Pointer;
+	pointer: ExamplePointer;
 	color: string;
 	containerRef: React.RefObject<HTMLDivElement | null>;
 }) => {

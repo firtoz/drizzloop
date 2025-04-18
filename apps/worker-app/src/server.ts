@@ -21,6 +21,13 @@ const app = new Hono<{
 	};
 }>();
 app
+	.get("/websocket", async (c): Promise<Response> => {
+		const fetcher = honoDoFetcherWithName(c.env.EXAMPLE_DO, "default");
+		return fetcher.get({
+			url: "/websocket",
+			init: c.req.raw.clone(),
+		}) as unknown as Response;
+	})
 	.use(
 		"*",
 		secureHeaders({
@@ -29,13 +36,6 @@ app
 			crossOriginResourcePolicy: "same-origin",
 		}),
 	)
-	.get("/websocket", async (c): Promise<Response> => {
-		const fetcher = honoDoFetcherWithName(c.env.EXAMPLE_DO, "default");
-		return fetcher.get({
-			url: "/websocket",
-			init: c.req.raw,
-		}) as unknown as Response;
-	})
 	.all("*", async (c, next) => {
 		try {
 			const { req, env } = c;

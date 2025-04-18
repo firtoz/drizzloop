@@ -10,6 +10,7 @@ import migrations from "schema/migrations";
 import * as schema from "schema/schema";
 import { drizzleSqliteWasm } from "./drizzleSqliteWasm";
 import { migrate } from "./utils/sqlite-wasm-migrator";
+import { sql } from "drizzle-orm";
 
 export type WorkerMessage = {
 	type: "query";
@@ -337,21 +338,18 @@ const start = async (sqlite3: Sqlite3Static) => {
 		persistenceRequested ? "Successful" : "Failed",
 	);
 
-	// const storageStatus: StorageStatus = {
-	// 	status: "transient",
-	// 	diagnostics,
-	// };
+	const dbName = "mydb-2.sqlite3";
 	let storageStatus: WorkerStorageStatus;
 
 	if ("opfs" in sqlite3) {
-		sqliteDb = new sqlite3.oo1.OpfsDb("/mydb.sqlite3");
+		sqliteDb = new sqlite3.oo1.OpfsDb(dbName);
 		log("OPFS is available, created persisted database at", sqliteDb.filename);
 		storageStatus = {
 			status: "persistent",
 			diagnostics,
 		};
 	} else {
-		sqliteDb = new sqlite3.oo1.DB("/mydb.sqlite3", "c");
+		sqliteDb = new sqlite3.oo1.DB(dbName, "c");
 		log("OPFS is not available, created transient database", sqliteDb.filename);
 
 		let reason: StorageTransientStatusReason;
@@ -388,7 +386,7 @@ const start = async (sqlite3: Sqlite3Static) => {
 		});
 
 		log("Migrating...");
-		await migrate(db, migrations, false);
+		await migrate(db, migrations, true);
 		log("Migration complete");
 
 		// Database is now ready for use

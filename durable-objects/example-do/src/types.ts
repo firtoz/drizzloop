@@ -1,34 +1,36 @@
-export type Pointer = {
+export type ExamplePointer = {
 	pointerId: number;
 	x: number;
 	y: number;
 	isActive: boolean;
 };
-export type LiveParticipant = {
+
+export type ExampleLiveParticipant = {
 	id: string;
 	color: string;
-	pointers: Pointer[];
+	pointers: ExamplePointer[];
 };
-export type ClientMessage =
+
+export type ExampleClientMessage =
 	| {
 			type: "join";
 	  }
 	| {
 			type: "pointerUpdate";
-			pointers: Pointer[];
+			pointers: ExamplePointer[];
 	  };
-export type ServerMessage =
+export type ExampleServerMessage =
 	| {
 			type: "welcome";
-			participants: LiveParticipant[];
+			participants: ExampleLiveParticipant[];
 	  }
 	| {
 			type: "joined";
-			participant: LiveParticipant;
+			participant: ExampleLiveParticipant;
 	  }
 	| {
 			type: "updated";
-			participant: LiveParticipant;
+			participant: ExampleLiveParticipant;
 	  }
 	| {
 			type: "left";

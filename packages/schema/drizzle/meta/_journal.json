@@ -15,6 +15,13 @@
       "when": 1742041712175,
       "tag": "0001_gifted_unus",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1744927643446,
+      "tag": "0002_large_squadron_supreme",
+      "breakpoints": true
     }
   ]
 }

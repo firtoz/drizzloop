@@ -1,16 +1,16 @@
 import type {
-	ClientMessage,
-	LiveParticipant,
-	Pointer,
-	ServerMessage,
+	ExampleClientMessage,
+	ExampleLiveParticipant,
+	ExamplePointer,
+	ExampleServerMessage,
 } from "example-do/types";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 export const useLiveParticipants = () => {
 	const [participants, setParticipants] = useState<
-		Map<string, LiveParticipant>
+		Map<string, ExampleLiveParticipant>
 	>(new Map());
-	const activePointers = useRef<Pointer[]>([]);
+	const activePointers = useRef<ExamplePointer[]>([]);
 	const containerRef = useRef<HTMLDivElement>(null);
 
 	const getRelativePointerPosition = useCallback(
@@ -35,7 +35,7 @@ export const useLiveParticipants = () => {
 		const ws = new WebSocket("/websocket");
 
 		ws.onmessage = (event) => {
-			const parsed = JSON.parse(event.data) as ServerMessage;
+			const parsed = JSON.parse(event.data) as ExampleServerMessage;
 			switch (parsed.type) {
 				case "welcome":
 					setParticipants(new Map(parsed.participants.map((p) => [p.id, p])));
@@ -65,7 +65,7 @@ export const useLiveParticipants = () => {
 			ws.send(
 				JSON.stringify({
 					type: "join",
-				} satisfies ClientMessage),
+				} satisfies ExampleClientMessage),
 			);
 		};
 
@@ -109,14 +109,14 @@ export const useLiveParticipants = () => {
 				JSON.stringify({
 					type: "pointerUpdate",
 					pointers: activePointers.current,
-				} satisfies ClientMessage),
+				} satisfies ExampleClientMessage),
 			);
 			lastUpdate = now;
 		};
 
 		const handlePointerDown = (event: PointerEvent) => {
 			const { x, y } = getRelativePointerPosition(event.clientX, event.clientY);
-			const pointer: Pointer = {
+			const pointer: ExamplePointer = {
 				pointerId: event.pointerId,
 				x,
 				y,

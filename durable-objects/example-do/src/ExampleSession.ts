@@ -2,17 +2,28 @@ import { BaseSession } from "@greybox/durable-object-helpers/BaseSession";
 import type { Env } from "cloudflare-worker-config";
 import ColorJS from "color";
 import { v7 } from "uuid";
-import type { ClientMessage, LiveParticipant, ServerMessage } from "./types";
+import type {
+	ExampleClientMessage,
+	ExampleLiveParticipant,
+	ExampleServerMessage,
+} from "./types";
 
-type Super = BaseSession<Env, LiveParticipant, ServerMessage, ClientMessage>;
+type Super = BaseSession<
+	Env,
+	ExampleLiveParticipant,
+	ExampleServerMessage,
+	ExampleClientMessage
+>;
 
 export class ExampleSession extends BaseSession<
 	Env,
-	LiveParticipant,
-	ServerMessage,
-	ClientMessage
+	ExampleLiveParticipant,
+	ExampleServerMessage,
+	ExampleClientMessage
 > {
-	protected createData: Super["createData"] = (_ctx): LiveParticipant => {
+	protected createData: Super["createData"] = (
+		_ctx,
+	): ExampleLiveParticipant => {
 		return {
 			id: v7(),
 			color: ColorJS.hsl(Math.random() * 360, 50, 50)
@@ -33,7 +44,7 @@ export class ExampleSession extends BaseSession<
 					true,
 				);
 
-				const welcomeMessage: ServerMessage = {
+				const welcomeMessage: ExampleServerMessage = {
 					type: "welcome",
 					participants: Array.from(this.sessions.values())
 						.filter((s) => s !== this)
