@@ -1,10 +1,12 @@
-import { describe, it, expect, beforeEach, afterEach } from "vitest";
-import { env, SELF } from "cloudflare:test";
-import type { Env } from "cloudflare-worker-config";
-import type { ServerMessage } from "../../../durable-objects/example-do/src/types";
+import { SELF, env } from "cloudflare:test";
+import type { Env as WorkerEnv } from "cloudflare-worker-config";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import type { ExampleServerMessage as ServerMessage } from "../../../durable-objects/example-do/src/types";
 
-declare module "cloudflare:test" {
-	interface ProvidedEnv extends Env {}
+declare global {
+	namespace Cloudflare {
+		interface Env extends WorkerEnv {}
+	}
 }
 
 describe("Worker Integration Tests", () => {
@@ -28,7 +30,9 @@ describe("Worker Integration Tests", () => {
 		let stub: DurableObjectStub;
 
 		beforeEach(() => {
-			stub = env.EXAMPLE_DO.get(env.EXAMPLE_DO.idFromName("default"));
+			stub = env.EXAMPLE_DO.get(
+				env.EXAMPLE_DO.idFromName(`test-${crypto.randomUUID()}`),
+			);
 		});
 
 		it("should handle GET request", async () => {
@@ -62,14 +66,34 @@ describe("Worker Integration Tests", () => {
 		let messages2: ServerMessage[] = [];
 
 		beforeEach(() => {
-			stub = env.EXAMPLE_DO.get(env.EXAMPLE_DO.idFromName("default"));
+			stub = env.EXAMPLE_DO.get(
+				env.EXAMPLE_DO.idFromName(`test-${crypto.randomUUID()}`),
+			);
 			messages1 = [];
 			messages2 = [];
 		});
 
-		afterEach(() => {
-			if (ws1?.readyState === WebSocket.OPEN) ws1.close();
-			if (ws2?.readyState === WebSocket.OPEN) ws2.close();
+		afterEach(async () => {
+			await Promise.all(
+				[ws1, ws2].map((socket) => {
+					if (!socket || socket.readyState === WebSocket.CLOSED) return;
+					return new Promise<void>((resolve, reject) => {
+						const timer = setTimeout(
+							() => reject(new Error("WebSocket cleanup timed out")),
+							5000,
+						);
+						socket.addEventListener(
+							"close",
+							() => {
+								clearTimeout(timer);
+								resolve();
+							},
+							{ once: true },
+						);
+						if (socket.readyState === WebSocket.OPEN) socket.close();
+					});
+				}),
+			);
 		});
 
 		async function setupWebSocket(response: Response): Promise<WebSocket> {
@@ -110,12 +134,11 @@ describe("Worker Integration Tests", () => {
 
 			const pointers = [{ x: 100, y: 100 }];
 			ws1.send(JSON.stringify({ type: "pointerUpdate", pointers }));
-			await new Promise((resolve) => setTimeout(resolve, 100));
-
-			// Verify messages
-			expect(messages2.some((m) => m.type === "joined")).toBe(true);
-			expect(messages2.some((m) => m.type === "updated")).toBe(true);
-			expect(messages1.some((m) => m.type === "welcome")).toBe(true);
+			await vi.waitFor(() => {
+				expect(messages2.some((m) => m.type === "joined")).toBe(true);
+				expect(messages2.some((m) => m.type === "updated")).toBe(true);
+				expect(messages1.some((m) => m.type === "welcome")).toBe(true);
+			});
 		});
 
 		it("should handle disconnections and verify message contents", async () => {
@@ -142,7 +165,9 @@ describe("Worker Integration Tests", () => {
 
 			// Test client joining
 			ws1.send(JSON.stringify({ type: "join" }));
-			await new Promise((resolve) => setTimeout(resolve, 100));
+			await vi.waitFor(() =>
+				expect(messages2.some((m) => m.type === "joined")).toBe(true),
+			);
 
 			const joinedMessage = messages2.find(
 				(m) => m.type === "joined",
@@ -156,7 +181,9 @@ describe("Worker Integration Tests", () => {
 
 			// Test second client joining
 			ws2.send(JSON.stringify({ type: "join" }));
-			await new Promise((resolve) => setTimeout(resolve, 100));
+			await vi.waitFor(() =>
+				expect(messages1.some((m) => m.type === "welcome")).toBe(true),
+			);
 
 			const welcomeMessage = messages1.find(
 				(m) => m.type === "welcome",
@@ -168,7 +195,9 @@ describe("Worker Integration Tests", () => {
 
 			// Test disconnection
 			ws1.close();
-			await new Promise((resolve) => setTimeout(resolve, 100));
+			await vi.waitFor(() =>
+				expect(messages2.some((m) => m.type === "left")).toBe(true),
+			);
 
 			const leftMessage = messages2.find(
 				(m) => m.type === "left",

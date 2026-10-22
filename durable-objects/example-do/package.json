@@ -8,7 +8,7 @@
 		"@greybox/durable-object-helpers": "^3.1.2",
 		"@hono/zod-validator": "^0.4.3",
 		"@types/color": "^4.2.0",
-		"hono": "^4.7.7",
+		"hono": "^4.13.13",
 		"perfect-cursors": "^1.0.5",
 		"uuid": "^11.1.0",
 		"zod": "^3.24.3"

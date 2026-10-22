@@ -5,7 +5,7 @@
 	"description": "Tests for Drizzle SQLite WASM integration",
 	"dependencies": {
 		"@sqlite.org/sqlite-wasm": "^3.49.1-build4",
-		"drizzle-orm": "^0.42.0",
+		"drizzle-orm": "^0.45.4",
 		"schema": "workspace:*",
 		"web-app": "workspace:*",
 		"zod": "^3.24.3"
@@ -13,9 +13,10 @@
 	"devDependencies": {
 		"@greybox/biome-config": "^2.1.2",
 		"@greybox/shared-tsconfig": "^2.1.2",
-		"@vitest/web-worker": "^3.1.1",
+		"@vitest/web-worker": "^5.0.5",
 		"drizzle-kit": "^0.31.0",
-		"vitest": "^3.1.1"
+		"vitest": "^5.0.5",
+		"@types/node": "^24.0.0"
 	},
 	"scripts": {
 		"db:generate": "drizzle-kit generate",
