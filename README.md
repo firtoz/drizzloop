@@ -20,8 +20,8 @@ The project is organized as follows:
 
 ## Prerequisites
 
-- [Node.js](https://nodejs.org/) (v20 or later recommended)
-- [Bun](https://bun.sh/) (latest version)
+- [Node.js](https://nodejs.org/) (24.22.1, selected by `.nvmrc`; run `nvm install && nvm use`)
+- [Bun](https://bun.sh/) (1.4.4, matching `packageManager`)
 - [Wrangler](https://developers.cloudflare.com/workers/wrangler/) (v3 or later)
 
 This project is set up to use Bun and Turborepo. While it may be possible to use npm or Yarn, this is not officially supported.
