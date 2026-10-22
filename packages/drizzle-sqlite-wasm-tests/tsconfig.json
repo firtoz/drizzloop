@@ -2,6 +2,6 @@
 	"extends": "@greybox/shared-tsconfig/tsconfig.json",
 	"include": ["src/**/*.ts"],
 	"compilerOptions": {
-		"types": ["vitest/globals"]
+		"types": ["vitest/globals", "node"]
 	}
 }

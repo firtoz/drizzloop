@@ -57,4 +57,18 @@ jobs:
       - name: Install dependencies
         run: bun install --frozen-lockfile --save-text-lockfile
 
+      - name: Audit dependency security
+        run: bun audit
+
+      - name: Check Worker integration test types
+        run: bunx tsc --noEmit -p packages/integration-tests/tsconfig.json
+
       - run: bun run test
+
+      - name: Export schemas using patched Drizzle tooling
+        run: |
+          bun run --cwd packages/schema drizzle-kit export > "$RUNNER_TEMP/schema.sql"
+          bun run --cwd packages/drizzle-sqlite-wasm-tests drizzle-kit export > "$RUNNER_TEMP/test-schema.sql"
+
+      - name: Build client, SSR and Durable Object
+        run: bun run build

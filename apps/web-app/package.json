@@ -9,7 +9,7 @@
 	"scripts": {
 		"build": "NODE_OPTIONS='--import tsx/esm' react-router build",
 		"dev": "NODE_OPTIONS='--import tsx/esm' react-router dev",
-		"typecheck": "react-router typegen && tsc --build --noEmit",
+		"typecheck": "NODE_OPTIONS='--import tsx/esm' react-router typegen && tsc --build --noEmit",
 		"lint": "bun typecheck && biome check --write"
 	},
 	"dependencies": {
@@ -17,13 +17,13 @@
 		"@greybox/hono-typed-fetcher": "^3.1.2",
 		"@greybox/shared-tsconfig": "^2.1.2",
 		"@greybox/wrangler-config-helper": "^3.1.2",
-		"@react-router/cloudflare": "^7.5.1",
+		"@react-router/cloudflare": "^7.18.4",
 		"@sqlite.org/sqlite-wasm": "^3.49.1-build4",
-		"hono": "^4.7.7",
+		"hono": "^4.13.13",
 		"isbot": "^5.1.26",
 		"react": "^19.1.0",
 		"react-dom": "^19.1.0",
-		"react-router": "^7.5.1",
+		"react-router": "^7.18.4",
 		"uuid": "^11.1.0",
 		"workbox-expiration": "^7.3.0",
 		"workbox-precaching": "^7.3.0",
@@ -35,13 +35,11 @@
 		"@cloudflare/workers-types": "^4.20250418.0",
 		"@greybox/biome-config": "^2.1.2",
 		"@greybox/shared-tsconfig": "^2.1.2",
-		"@hiogawa/vite-node-miniflare": "^0.1.1",
 		"@iarna/toml": "^2.2.5",
-		"@react-router/dev": "^7.5.1",
+		"@react-router/dev": "^7.18.4",
 		"@tailwindcss/vite": "^4.1.4",
 		"@types/react": "^19.1.2",
 		"@types/react-dom": "^19.1.2",
-		"add": "^2.0.6",
 		"cloudflare-worker-config": "workspace:*",
 		"concurrently": "^9.1.2",
 		"tailwindcss": "^4.1.4",
@@ -50,12 +48,10 @@
 		"vite": "^6.3.2",
 		"vite-plugin-pwa": "^1.0.0",
 		"vite-tsconfig-paths": "^5.1.4",
-		"wrangler": "4.12.0"
+		"wrangler": "^4.152.0"
 	},
 	"engines": {
 		"node": "^24.22.1 || >=26.12.1"
 	},
-	"overrides": {
-		"vite": "^6.3.2"
-	}
+	"overrides": {}
 }
